@@ -2,3 +2,4 @@
 li_server
 *.exe
 *.pcap *.cap
+test.cpp
