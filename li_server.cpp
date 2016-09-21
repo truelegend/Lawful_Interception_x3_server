@@ -9,12 +9,47 @@
 #include "li_server.h"
 using namespace std;
 
-#define RECV_BUFFER_MAX 4096
+#define RECV_BUFFER_MAX 610
 
 CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
+int getContentLen(char* data)
+{
+    string leftstr = "<" + string("PayloadLength") + ">";
+    string rightstr = "</" + string("PayloadLength") + ">";
+    char* pleft = strstr(data,leftstr.c_str());
+    if (!pleft)
+    {
+        LOG(DEBUG,"Not complete, cannot find %s",leftstr.c_str());
+        return -1;
+    }
+    char* pright = strstr(data,rightstr.c_str());
+    if (!pright)
+    {
+        LOG(DEBUG,"Not complete cannot to find %s",rightstr.c_str());
+        return -1;
+    }
+    int len = leftstr.size();
+    pleft += len;
+    char value[10];
+    memcpy(value,pleft,pright-pleft);
+    value[pright-pleft] = '\0';
+    return atoi(value);
+}
+
+char *getXmlRear(char *data)
+{
+    char* rear = strstr(data,"</hi3-uag>");
+    if (!rear)
+    {
+        LOG(DEBUG,"Not complete, cannot find </hi3-uag>");
+        return NULL;
+    }
+    return (rear+strlen("</hi3-uag>"));
+}
+
 void* udpx3thread(void *addr)
 { 
     struct sockaddr_in *p_serv_addr = (struct sockaddr_in *)addr;
@@ -40,7 +75,7 @@ void* udpx3thread(void *addr)
     {
         memset(&buffer,0,sizeof(buffer));
         
-        int recv_len = recvfrom(sockfd,buffer,sizeof(buffer),0, (struct sockaddr *)&client_addr,&len);
+        int recv_len = recvfrom(sockfd,buffer,RECV_BUFFER_MAX,0, (struct sockaddr *)&client_addr,&len);
         if (recv_len > 0)
         {
             g_udp_recv_num++;
@@ -95,29 +130,99 @@ void* tcpx3thread(void *addr)
     	LOG(ERROR,"failed to accept ");
     	exit(1);
     }
-    //unsigned int 
     LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
     char buffer[RECV_BUFFER_MAX+1];
-    //CX3parser x3parser;
+    //char buffer[123];
+    int content_len = -1;
+    int xmlhdr_len = -1;
+    bool next_x3 = false;
+    int more_body_num = -1;
+    char tmp_buffer[2*RECV_BUFFER_MAX+1];
+    char x3_buffer[RECV_BUFFER_MAX+1];
+    char *p = tmp_buffer;
+    char *xmlrear = NULL;
+    
     if (!g_pX3parserforTcp)
     {
          g_pX3parserforTcp = new CX3parser();
-    }   
+    }  
+    memset(&tmp_buffer,0,sizeof(tmp_buffer));
+    memset(&x3_buffer,0,sizeof(x3_buffer)); 
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
         
-    	int recv_len = recv(client_sockfd,buffer,sizeof(buffer),0);
+    	int recv_len = recv(client_sockfd,buffer,RECV_BUFFER_MAX,0);
+        //int recv_len = recv(client_sockfd,buffer,123,0);
         if (recv_len > 0)
         {
             g_tcp_recv_num++;
-    	    LOG(DEBUG,"%d bytes received",recv_len);
-            bool parse_ret = g_pX3parserforTcp->parse_x3(buffer,recv_len);
-            if (parse_ret == false)
+    	    LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
+            memcpy(p,buffer,recv_len);
+            p += recv_len;
+            *p = '\0';
+            assert((p - tmp_buffer) <= sizeof(tmp_buffer));
+            do
             {
-                LOG(ERROR,"failed to parse this x3 pkg, pls check the X3 msg manually, the program is exiting!");
-                //exit(1);
-            }            
+                if(more_body_num == -1)
+                {
+                    if(content_len == -1)
+                    {
+                        content_len = getContentLen(tmp_buffer);
+                        LOG(DEBUG,"get content_len: %d", content_len);
+                        if(content_len == -1)
+                        {
+                            LOG(DEBUG,"Note: cannot find content_len, need to recv again!");  
+                            break;
+                        }
+                    }
+                    xmlrear = getXmlRear(tmp_buffer);
+                    if (NULL == xmlrear)
+                    {
+                        LOG(DEBUG,"Note: cannot find xml rear, need to recv again!");      
+                        break;
+                    }
+                    xmlhdr_len = xmlrear - tmp_buffer;
+                    int buf_left_len = p - xmlrear;
+                    assert(buf_left_len >= 0);
+                    if(content_len > buf_left_len)
+                    {
+                        more_body_num = content_len - buf_left_len;
+                        LOG(DEBUG,"Note: need more body_num from recv: %d, need to recv again!",more_body_num);
+                        break;
+                    } 
+                }
+                else
+                {
+                    if(recv_len < more_body_num)
+                    {
+                        more_body_num -= recv_len;
+                        LOG(DEBUG,"Note: still need more body_num from recv: %d, need to recv again!",more_body_num);
+                        break;
+                    }
+                }
+                memcpy(x3_buffer,tmp_buffer,xmlhdr_len+content_len); 
+                LOG(DEBUG,"xmlhdr_len %d, content_len %d", xmlhdr_len,content_len);      
+                bool parse_ret = g_pX3parserforTcp->parse_x3(x3_buffer,xmlhdr_len+content_len);
+                if (parse_ret == false)
+                {
+                    LOG(ERROR,"failed to parse this x3 pkg, pls check the X3 msg manually, the program is exiting!");
+                    exit(1);
+                }  
+                int next_x3_len = p - tmp_buffer - (xmlhdr_len+content_len);
+                next_x3 = (next_x3_len>0)?true:false;
+                if (next_x3)
+                {
+                    memmove(tmp_buffer,tmp_buffer+xmlhdr_len+content_len,next_x3_len);
+                    tmp_buffer[next_x3_len] = '\0';
+                    LOG(DEBUG,"the next x3 pkg exists, next_x3_len %d",next_x3_len);
+                }
+                content_len = -1;
+                xmlhdr_len = -1;
+                more_body_num = -1;
+                p = next_x3?tmp_buffer+next_x3_len:tmp_buffer;
+                xmlrear = NULL;
+            }while(next_x3);
         }
         else
         {

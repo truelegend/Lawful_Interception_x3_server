@@ -40,6 +40,7 @@ bool CX3parser::parse_x3(char *x3, int x3_len)
         LOG(ERROR,"wrong parameters");
         return false;
     }
+    LOG(DEBUG,"x3 len is %d",x3_len);
     x3[x3_len] = '\0';
     m_x3 = x3;
     m_x3_len = x3_len;

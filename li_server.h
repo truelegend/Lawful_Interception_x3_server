@@ -11,5 +11,6 @@
 #include "x3parser.h"
 #include "log.h"
 
-
+int getContentLen(char* data);
+char *getXmlRear(char *data);
 #endif
