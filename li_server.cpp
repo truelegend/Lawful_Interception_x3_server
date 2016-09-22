@@ -9,7 +9,7 @@
 #include "li_server.h"
 using namespace std;
 
-#define RECV_BUFFER_MAX 610
+#define RECV_BUFFER_MAX 2048
 
 CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
@@ -67,7 +67,7 @@ void* udpx3thread(void *addr)
         LOG(ERROR,"error while binding address.");
         exit(1);
     }
-    char buffer[RECV_BUFFER_MAX+1];
+    unsigned char buffer[RECV_BUFFER_MAX+1];
     //CX3parser x3parser;
     
     socklen_t len = sizeof(client_addr);
@@ -131,16 +131,16 @@ void* tcpx3thread(void *addr)
     	exit(1);
     }
     LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
-    char buffer[RECV_BUFFER_MAX+1];
+    unsigned char buffer[RECV_BUFFER_MAX+1];
     //char buffer[123];
     int content_len = -1;
     int xmlhdr_len = -1;
     bool next_x3 = false;
     int more_body_num = -1;
-    char tmp_buffer[2*RECV_BUFFER_MAX+1];
-    char x3_buffer[RECV_BUFFER_MAX+1];
-    char *p = tmp_buffer;
-    char *xmlrear = NULL;
+    unsigned char tmp_buffer[2*RECV_BUFFER_MAX+1];
+    unsigned char x3_buffer[RECV_BUFFER_MAX+1];
+    unsigned char *p = tmp_buffer;
+    unsigned char *xmlrear = NULL;
     
     if (!g_pX3parserforTcp)
     {
@@ -160,15 +160,19 @@ void* tcpx3thread(void *addr)
     	    LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
-            *p = '\0';
-            assert((p - tmp_buffer) <= sizeof(tmp_buffer));
+            if((p - tmp_buffer) > sizeof(tmp_buffer))
+            {
+                LOG(ERROR,"seems not valid x3 msg, out of array");
+                exit(1);
+            }
+            *p = '\0';            
             do
             {
                 if(more_body_num == -1)
                 {
                     if(content_len == -1)
                     {
-                        content_len = getContentLen(tmp_buffer);
+                        content_len = getContentLen((char *)tmp_buffer);
                         LOG(DEBUG,"get content_len: %d", content_len);
                         if(content_len == -1)
                         {
@@ -176,7 +180,7 @@ void* tcpx3thread(void *addr)
                             break;
                         }
                     }
-                    xmlrear = getXmlRear(tmp_buffer);
+                    xmlrear = (unsigned char*)getXmlRear((char *)tmp_buffer); 
                     if (NULL == xmlrear)
                     {
                         LOG(DEBUG,"Note: cannot find xml rear, need to recv again!");      

@@ -69,7 +69,7 @@ class CX3parser
 public:
     CX3parser();
     ~CX3parser();
-    bool parse_x3(char *x3, int x3_len);
+    bool parse_x3(unsigned char *x3, int x3_len);
     bool isIpv4type(){ return (m_iptype==IPV4)?true:false; }
 
     unsigned int x3_num;
@@ -114,7 +114,7 @@ private:
         NOIP = 2
     };
 
-    char *m_x3;
+    unsigned char *m_x3;
     int m_x3_len;
     char tmp[100];
     int m_payloadlen;
@@ -124,14 +124,14 @@ private:
     int m_iptype;
     
     char m_format_x3[4096];
-    char *m_xmlrear;
+    unsigned char *m_xmlrear;
     
     bool getElementValue(const char* str, char* value);
     bool verifyX3hdrformat();
     char *getX3hdrrear();
-    bool parse_x3body(char *body, int len);
-    bool parse_ip_hdr(char *body, int &ip_hdr_len, int &total_len);
-    unsigned short parse_udp_hdr(char *body);
+    bool parse_x3body(unsigned char *body, int len);
+    bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
+    unsigned short parse_udp_hdr(unsigned char *body);
     void parse_rtp(unsigned char *data);
     void parse_msrp(unsigned char *data);
     bool getIPaddrAndVerify(void *src, void *dst, int af);

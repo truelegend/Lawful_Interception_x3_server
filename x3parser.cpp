@@ -33,7 +33,7 @@ CX3parser::~CX3parser()
 }
 
 
-bool CX3parser::parse_x3(char *x3, int x3_len)
+bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
 {
     if (x3 == NULL || x3_len == 0)
     {
@@ -61,13 +61,13 @@ bool CX3parser::getElementValue(const char* str, char* value)
 {
     string leftstr = "<" + string(str) + ">";
     string rightstr = "</" + string(str) + ">";
-    char* pleft = strstr(m_x3,leftstr.c_str());
+    char* pleft = strstr((char *)m_x3,leftstr.c_str());
     if (!pleft)
     {
         LOG(ERROR,"failed to find %s",leftstr.c_str());
         return false;
     }
-    char* pright = strstr(m_x3,rightstr.c_str());
+    char* pright = strstr((char *)m_x3,rightstr.c_str());
     if (!pright)
     {
         LOG(ERROR,"failed to find %s",rightstr.c_str());
@@ -79,9 +79,9 @@ bool CX3parser::getElementValue(const char* str, char* value)
     value[pright-pleft] = '\0';
     return true;
 }
-bool CX3parser::parse_x3body(char *body, int len)
+bool CX3parser::parse_x3body(unsigned char *body, int len)
 {
-    m_xmlrear = getX3hdrrear();
+    m_xmlrear = (unsigned char *)getX3hdrrear();
     if (!m_xmlrear)
     {
         LOG(ERROR,"failed to find the rear of x3 hdr");
@@ -99,16 +99,16 @@ bool CX3parser::parse_x3body(char *body, int len)
         return true;
     }
     
-    char *start = body;
-    switch(*start&0xf0)
+    unsigned char *start = body;
+    switch(*start>>4)
     {
-        case 64:
+        case 4:
             if (setAndVerifyIPtype(IPV4) == false)
             {
                 return false;
             }
             break;
-        case 96:
+        case 6:
             if (setAndVerifyIPtype(IPV6) == false)
             {
                 return false;
@@ -155,7 +155,7 @@ bool CX3parser::parse_x3body(char *body, int len)
 }
 char* CX3parser::getX3hdrrear()
 {
-    char* rear = strstr(m_x3,"</hi3-uag>");
+    char* rear = strstr((char *)m_x3,"</hi3-uag>");
     if (!rear)
     {
         LOG(ERROR,"failed to find </hi3-uag>");
@@ -164,13 +164,18 @@ char* CX3parser::getX3hdrrear()
     return (rear+strlen("</hi3-uag>"));
 }
 
-bool CX3parser::parse_ip_hdr(char *body, int &ip_hdr_len, int &total_len)
+bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len)
 {
     switch(m_iptype)
     {
         case IPV4:
         {
             IPv4_HDR *pHdr = (IPv4_HDR *)body;
+            if (pHdr->m_cTypeOfProtocol != 17) // for RTP/RTCP, it is over UDP
+            {
+                LOG(ERROR,"the upper protocol is not UDP");
+                return false;
+            }
             ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
             total_len = ntohs(pHdr->m_sTotalLenOfPacket);
             return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
@@ -178,6 +183,11 @@ bool CX3parser::parse_ip_hdr(char *body, int &ip_hdr_len, int &total_len)
         case IPV6:
         {
             IPv6_HDR *pHdr = (IPv6_HDR *)body;
+            if (pHdr->m_ucNexthdr != 17) // for RTP/RTCP, it is over UDP
+            {
+                LOG(ERROR,"the upper protocol is not UDP");
+                return false;
+            }
             // Won't consider extended ipv6 hdr for now
             ip_hdr_len = sizeof(IPv6_HDR);
             total_len = ip_hdr_len + ntohs(pHdr->m_usPayloadlen);
@@ -191,7 +201,7 @@ bool CX3parser::parse_ip_hdr(char *body, int &ip_hdr_len, int &total_len)
     }
      
 }
-unsigned short CX3parser::parse_udp_hdr(char *body)
+unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
 {
     UDP_HDR *pHdr = (UDP_HDR *)body;
     unsigned short src_port = ntohs(pHdr->m_usSourPort);
@@ -385,12 +395,12 @@ char* CX3parser::formatX3xml()
    int r_anglebracket_num = 0;
    char *start_format_x3 = m_format_x3;
 
-   for(char *start = m_x3;start != m_xmlrear; start++)
+   for(char *start = (char *)m_x3;start != (char *)m_xmlrear; start++)
    {
         *start_format_x3++ = *start;
         if (*start == '>')
         {
-            if ((start+1) == m_xmlrear)
+            if ((start+1) == (char *)m_xmlrear)
             {
                 break;
             }
@@ -431,24 +441,8 @@ void CX3parser::formatX3payload(unsigned char *data)
 
     while(start != end)
     {
-        if (*start == 0x0)
-        {   
-            *data++ = '0';
-            *data++ = '0';
-        }
-        else
-        {
-            try
-            {
-                *data++ = map[*start/16];
-                *data++ = map[*start%16]; 
-            }
-            catch(exception err)
-            {
-                printf("%s",err.what());
-            }
-           
-        }
+        *data++ = map[*start/16];
+        *data++ = map[*start%16]; 
         start++;
     }
     *start = '\n';
