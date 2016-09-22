@@ -132,7 +132,7 @@ private:
     bool parse_x3body(unsigned char *body, int len);
     bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
     unsigned short parse_udp_hdr(unsigned char *body);
-    void parse_rtp(unsigned char *data);
+    void parse_rtp(unsigned char *data,int rtp_len);
     void parse_msrp(unsigned char *data);
     bool getIPaddrAndVerify(void *src, void *dst, int af);
     void formatX3();

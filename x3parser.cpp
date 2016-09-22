@@ -136,9 +136,10 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     }        
     start += ip_hdr_len;
     int udp_hdrbody_len = parse_udp_hdr(start);
-    if(udp_hdrbody_len == 0)
+    if(udp_hdrbody_len == 0 || 
+        udp_hdrbody_len != (total_len - ip_hdr_len))
     {
-        LOG(ERROR,"empty udp pkg or something wrong");
+        LOG(ERROR,"the udp pkg len %d is not right (total_len - ip_hdr_len)", udp_hdrbody_len,total_len,ip_hdr_len);
         return false;
     }
     //LOG(DEBUG,"udp hdr+body len is %d",udp_hdrbody_len);
@@ -149,7 +150,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     }
     else if (m_real_rtptype == REAL_RTP)
     {
-        parse_rtp((unsigned char*)start);
+        parse_rtp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
     }
     return true;
 }
@@ -237,7 +238,7 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     return ntohs(pHdr->m_usLength);
 }
 
-void CX3parser::parse_rtp(unsigned char *data)
+void CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 {
     unsigned short rtp_seq = ntohs(*((unsigned short *)(data+2)));
     LOG(DEBUG,"rtp sequence is %d",rtp_seq);
