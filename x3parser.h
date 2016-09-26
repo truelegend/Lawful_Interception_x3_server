@@ -54,7 +54,18 @@ struct UDP_HDR
 };
 struct RTP_HDR
 {
+             
+    unsigned  cc:4; /* CSRC count */
+    unsigned  x:1; /* header extension flag */
+    unsigned  p:1; /* padding flag */
+    unsigned  v:2; /* packet type */
+
+    unsigned  pt:7; /* payload type */
+    unsigned  m:1; /* marker bit */
     
+    unsigned short   seq;      /* sequence number            */  
+    unsigned int     ts;       /* timestamp                  */  
+    unsigned int     ssrc;     /* synchronization source     */  
 };
 struct PORT_PARI_INFO
 {
@@ -63,6 +74,7 @@ struct PORT_PARI_INFO
     unsigned int from_target_num;
     unsigned int to_target_num;
 };
+
 
 class CX3parser
 {
@@ -113,7 +125,8 @@ private:
         IPV6 = 6,
         NOIP = 2
     };
-
+    int sock;
+    struct sockaddr_in peeraddr;
     unsigned char *m_x3;
     int m_x3_len;
     char tmp[100];
@@ -132,7 +145,7 @@ private:
     bool parse_x3body(unsigned char *body, int len);
     bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
     unsigned short parse_udp_hdr(unsigned char *body);
-    void parse_rtp(unsigned char *data,int rtp_len);
+    bool parse_rtp(unsigned char *data,int rtp_len);
     void parse_msrp(unsigned char *data);
     bool getIPaddrAndVerify(void *src, void *dst, int af);
     void formatX3();

@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <signal.h>
 #include "li_server.h"
 using namespace std;
 
@@ -15,6 +16,9 @@ CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
+
+pthread_t g_udpx3thNo, g_tcpx3thNo;
+
 int getContentLen(char* data)
 {
     string leftstr = "<" + string("PayloadLength") + ">";
@@ -263,6 +267,23 @@ void Usage(char **argv)
     printf("%s listen_ip_address lister_port\n", argv[0]);
 }
 
+void sigint_handler(int sig)
+{
+    if (sig == SIGINT)
+    {
+        if((ESRCH != pthread_kill(g_udpx3thNo,0)) 
+             && (0 != pthread_cancel(g_udpx3thNo)))
+        {
+            LOG(ERROR,"failed to cancel udp thread");
+        }
+        if((ESRCH != pthread_kill(g_tcpx3thNo,0)) 
+             && (0 != pthread_cancel(g_tcpx3thNo)))
+        {
+            LOG(ERROR,"failed to cancel tcp thread");
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
 	if (argc != 3)
@@ -271,27 +292,39 @@ int main(int argc, char **argv)
         Usage(argv);
 		exit(1);
 	}
+    if (signal(SIGINT,sigint_handler) == SIG_ERR)
+    {
+        LOG(ERROR,"cannot catch signal");
+        exit(1);
+    }
     struct sockaddr_in serv_addr;
     memset(&serv_addr,0,sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(atoi(argv[2]));
     serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
 
-    pthread_t udpx3thNo, tcpx3thNo;
     int ret;
-    ret = pthread_create(&udpx3thNo,NULL,udpx3thread,&serv_addr);     
+    ret = pthread_create(&g_udpx3thNo,NULL,udpx3thread,&serv_addr);     
     if (ret)                                                                                                                                         
     {                                                                                                                                                
-        LOG(ERROR,"failed to create thread, error No. is %d", ret);                                                                        
+        LOG(ERROR,"failed to create udp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
     } 
-    ret = pthread_create(&tcpx3thNo,NULL,tcpx3thread,&serv_addr);     
+    ret = pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&serv_addr);     
     if (ret)                                                                                                                                         
     {                                                                                                                                                
-        LOG(ERROR,"failed to create thread, error No. is %d", ret);                                                                        
+        LOG(ERROR,"failed to create tcp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
     } 
-    getchar();      
+    //getchar();      
+    if(pthread_join(g_tcpx3thNo,NULL) != 0)
+    {
+        LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");
+    }
+    if(pthread_join(g_udpx3thNo,NULL) != 0)
+    {
+        LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");
+    }
     LOG(DEBUG,"=============================================================================================================================");
     if (g_pX3parserforTcp)
     {

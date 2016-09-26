@@ -1,5 +1,6 @@
 #include "log.h"
 #include "x3parser.h"
+#include <errno.h>
 using namespace std;
 
 CX3parser::CX3parser()
@@ -24,6 +25,13 @@ CX3parser::CX3parser()
     to_msrp_num = 0;
     target_ip = NULL;
     uag_ip = NULL;
+
+    //struct sockaddr_in peeraddr;
+    sock = socket(AF_INET,SOCK_DGRAM,0);
+    assert(sock != -1);
+    peeraddr.sin_family = AF_INET;
+    peeraddr.sin_port = htons(40000);
+    peeraddr.sin_addr.s_addr = inet_addr("10.2.1.75");
 }
 
 CX3parser::~CX3parser()
@@ -150,7 +158,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     }
     else if (m_real_rtptype == REAL_RTP)
     {
-        parse_rtp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
+        return parse_rtp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
     }
     return true;
 }
@@ -238,10 +246,23 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     return ntohs(pHdr->m_usLength);
 }
 
-void CX3parser::parse_rtp(unsigned char *data, int rtp_len)
+bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 {
-    unsigned short rtp_seq = ntohs(*((unsigned short *)(data+2)));
-    LOG(DEBUG,"rtp sequence is %d",rtp_seq);
+    RTP_HDR *pHdr = (RTP_HDR *)data;
+    if (pHdr->v != 2)
+    {
+        LOG(ERROR,"this is invalid RTP pkg");
+        return false;
+    }
+    unsigned short rtp_seq = ntohs(pHdr->seq);
+    LOG(DEBUG,"rtp sequence is %d, payload type is %d, SSRC is 0x%X, rtp len %d",rtp_seq,pHdr->pt,ntohl(pHdr->ssrc),rtp_len);
+    int n = sendto(sock,data,rtp_len,0,(struct sockaddr *)&peeraddr,sizeof(peeraddr));
+    if (n <= 0)
+    {
+        LOG(ERROR,"sending failed, %d:%s",errno,strerror(errno));
+    }
+    LOG(DEBUG,"%d bytes sent out to vlc",n);
+    return true;
 }
 
 void CX3parser::parse_msrp(unsigned char *data)
