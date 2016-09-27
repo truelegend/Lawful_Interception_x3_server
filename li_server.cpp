@@ -255,8 +255,9 @@ void OutputStatics(CX3parser *pX3parser)
         LOG(DEBUG,"the detailed RTP/RTCP info: ");
         for(vector<PORT_PARI_INFO>::iterator iter = pX3parser->vecPort_pair_info.begin(); iter != pX3parser->vecPort_pair_info.end(); ++iter)
         {
-            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d", 
-            pX3parser->target_ip,(*iter).target_port,pX3parser->uag_ip,(*iter).uag_port,(*iter).from_target_num,(*iter).to_target_num);
+            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X", 
+            pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
+            iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target);
         }
     }
 }

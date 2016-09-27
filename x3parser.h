@@ -16,6 +16,7 @@
 #include <exception>
 #include <stdexcept>
 #include <vector>
+#include "log.h"
 
 #define IP_STRING_NUM 256
 struct IPv4_HDR
@@ -71,8 +72,11 @@ struct PORT_PARI_INFO
 {
     unsigned short target_port;
     unsigned short uag_port;
-    unsigned int from_target_num;
-    unsigned int to_target_num;
+    unsigned int   from_target_num;
+    unsigned int   to_target_num;
+    int            payload_type;
+    unsigned int   ssrc_from_target;
+    unsigned int   ssrc_to_target;
 };
 
 
@@ -138,6 +142,7 @@ private:
     
     char m_format_x3[4096];
     unsigned char *m_xmlrear;
+    std::vector<PORT_PARI_INFO>::iterator m_cur_iter;
     
     bool getElementValue(const char* str, char* value);
     bool verifyX3hdrformat();
@@ -151,10 +156,24 @@ private:
     void formatX3();
     char* formatX3xml();
     void formatX3payload(unsigned char *data);
-    bool setAndVerifyIPtype(int iptype);
+    //bool setAndVerifyIPtype(int iptype);
     void initializeArguments();
     bool setPortPairInfo(unsigned short src_port, unsigned short dst_port);
     std::vector<PORT_PARI_INFO>::iterator findExistedPortPair(unsigned short target_port,unsigned short uag_port);
 
+    template<typename T1, typename T2,typename T3>
+    bool SetAndVerifyValue(T1& argu,const T2 iniValue, const T3 newValue)
+    {
+        if (argu == iniValue)
+        {
+            argu = newValue;
+        }
+        else if (argu != newValue)
+        {
+            LOG(ERROR,"should be something wrong, the previous is 0x%x, the current is 0x%x",argu, newValue);
+            return false;
+        }
+        return true;
+    }
 };
 #endif

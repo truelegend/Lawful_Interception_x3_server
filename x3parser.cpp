@@ -1,4 +1,3 @@
-#include "log.h"
 #include "x3parser.h"
 #include <errno.h>
 using namespace std;
@@ -111,13 +110,13 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     switch(*start>>4)
     {
         case 4:
-            if (setAndVerifyIPtype(IPV4) == false)
+            if (SetAndVerifyValue(m_iptype,NOIP,IPV4) == false)
             {
                 return false;
             }
             break;
         case 6:
-            if (setAndVerifyIPtype(IPV6) == false)
+            if (SetAndVerifyValue(m_iptype,NOIP,IPV6) == false)
             {
                 return false;
             }
@@ -256,12 +255,44 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     }
     unsigned short rtp_seq = ntohs(pHdr->seq);
     LOG(DEBUG,"rtp sequence is %d, payload type is %d, SSRC is 0x%X, rtp len %d",rtp_seq,pHdr->pt,ntohl(pHdr->ssrc),rtp_len);
-    int n = sendto(sock,data,rtp_len,0,(struct sockaddr *)&peeraddr,sizeof(peeraddr));
-    if (n <= 0)
+
+    bool ret = SetAndVerifyValue(m_cur_iter->payload_type,-1,pHdr->pt);
+    if (ret == false)
     {
-        LOG(ERROR,"sending failed, %d:%s",errno,strerror(errno));
+        return false;
     }
-    LOG(DEBUG,"%d bytes sent out to vlc",n);
+
+    switch(m_calldirection)
+    {
+        case FROMTARGET:
+        {
+            bool ret = SetAndVerifyValue(m_cur_iter->ssrc_from_target,0,ntohl(pHdr->ssrc));
+            if (ret == false)
+            {
+                return false;
+            }
+            break;
+        }
+        case TOTARGET:
+        {
+            bool ret = SetAndVerifyValue(m_cur_iter->ssrc_to_target,0,ntohl(pHdr->ssrc));
+            if (ret == false)
+            {
+                return false;
+            }
+            break;
+        }
+    }
+    if (m_calldirection == FROMTARGET)
+    {
+        int n = sendto(sock,data,rtp_len,0,(struct sockaddr *)&peeraddr,sizeof(peeraddr));
+        if (n <= 0)
+        {
+            LOG(ERROR,"sending failed, %d:%s",errno,strerror(errno));
+        }
+        LOG(DEBUG,"%d bytes sent out to vlc",n);
+    }
+
     return true;
 }
 
@@ -470,7 +501,7 @@ void CX3parser::formatX3payload(unsigned char *data)
     *start = '\n';
 }
 
-bool CX3parser::setAndVerifyIPtype(int iptype)
+/*bool CX3parser::setAndVerifyIPtype(int iptype)
 {
     if (m_iptype == NOIP)
     {
@@ -485,7 +516,7 @@ bool CX3parser::setAndVerifyIPtype(int iptype)
         }
     }
     return true;
-}
+}*/
 
 void CX3parser::initializeArguments()
 {
@@ -502,12 +533,14 @@ bool CX3parser::setPortPairInfo(unsigned short src_port, unsigned short dst_port
             vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(dst_port,src_port);
             if(iter == vecPort_pair_info.end())
             {
-                PORT_PARI_INFO portpartinfo = {dst_port,src_port,0,1};
+                PORT_PARI_INFO portpartinfo = {dst_port,src_port,0,1,-1,0,0};
                 vecPort_pair_info.push_back(portpartinfo);
+                m_cur_iter = findExistedPortPair(dst_port,src_port);
             }
             else
             {
-                (*iter).to_target_num++;
+                iter->to_target_num++;
+                m_cur_iter = iter;
             }
             break;
         } 
@@ -516,12 +549,14 @@ bool CX3parser::setPortPairInfo(unsigned short src_port, unsigned short dst_port
             vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(src_port,dst_port);
             if(iter == vecPort_pair_info.end())
             {
-                PORT_PARI_INFO portpartinfo = {src_port,dst_port,1,0};
+                PORT_PARI_INFO portpartinfo = {src_port,dst_port,1,0,-1,0,0};
                 vecPort_pair_info.push_back(portpartinfo);
+                m_cur_iter = findExistedPortPair(src_port,dst_port);
             }
             else
             {
-                (*iter).from_target_num++;
+                iter->from_target_num++;
+                m_cur_iter = iter;
             }
             break;
         }
@@ -538,8 +573,8 @@ vector<PORT_PARI_INFO>::iterator CX3parser::findExistedPortPair(unsigned short t
     vector<PORT_PARI_INFO>::iterator iter;
     for(iter = vecPort_pair_info.begin(); iter != vecPort_pair_info.end(); ++iter)
     {
-        if ((*iter).target_port == target_port 
-            && (*iter).uag_port == uag_port)
+        if (iter->target_port == target_port 
+            && iter->uag_port == uag_port)
         {
             return iter;
         }
