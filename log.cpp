@@ -34,6 +34,7 @@ CLog* CLog::GetInstance()
 void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,int level, const char* format,...)
 {
     pthread_mutex_lock(&mutex_x);
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
     char str[20480] = {0};
     va_list args;
     va_start(args, format);
@@ -49,6 +50,7 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,int lev
 
     printf("<%s %s>[%s(%s:%d)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
     fprintf(m_logfile, "<%s %s>[%s(%s:%d)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); 
     pthread_mutex_unlock(&mutex_x);
 }
 
