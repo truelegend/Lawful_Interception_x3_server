@@ -296,13 +296,13 @@ int main(int argc, char **argv)
     serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
     int udp_socket = starupServSocket(serv_addr,SOCK_DGRAM);
     int tcp_socket = starupServSocket(serv_addr,SOCK_STREAM);
-     
-    if (pthread_create(&g_udpx3thNo,NULL,udpx3thread,&udp_socket) != 0)                                                                                                                                         
+    int ret; 
+    if ((ret = pthread_create(&g_udpx3thNo,NULL,udpx3thread,&udp_socket)) != 0)                                                                                                                                         
     {                                                                                                                                                
         LOG(ERROR,"failed to create udp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
     }   
-    if (pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&tcp_socket) != 0)                                                                                                                                         
+    if ((ret = pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&tcp_socket)) != 0)                                                                                                                                         
     {                                                                                                                                                
         LOG(ERROR,"failed to create tcp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
