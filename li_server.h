@@ -13,4 +13,6 @@
 
 int getContentLen(char* data);
 char *getXmlRear(char *data);
+void sigint_handler(int sig);
+int starupServSocket(struct sockaddr_in &serv_addr,int type);
 #endif

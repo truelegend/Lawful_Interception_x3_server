@@ -54,32 +54,35 @@ char *getXmlRear(char *data)
     return (rear+strlen("</hi3-uag>"));
 }
 
-void* udpx3thread(void *addr)
-{ 
-    struct sockaddr_in *p_serv_addr = (struct sockaddr_in *)addr;
-    int sockfd = socket(AF_INET,SOCK_DGRAM,0);
+int starupServSocket(struct sockaddr_in &serv_addr,int type)
+{
+    int sockfd = socket(AF_INET,type,0);
     if(sockfd < 0)
     {
         LOG(ERROR,"socket descriptor is invalid, %d:%s",errno,strerror(errno));
         exit(1);
     }
-    struct sockaddr_in client_addr;
-    memset(&client_addr,0,sizeof(client_addr));
-    int brst = bind(sockfd,(struct sockaddr*)p_serv_addr,sizeof(struct sockaddr));
+    int brst = bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(struct sockaddr));
     if(brst == -1)
     {
         LOG(ERROR,"error while binding address.");
         exit(1);
     }
+    return sockfd;
+}
+
+void* udpx3thread(void *pSocket)
+{ 
+    int *p_serve_sock = (int *)pSocket;
+    struct sockaddr_in client_addr;
+    memset(&client_addr,0,sizeof(client_addr));
     unsigned char buffer[RECV_BUFFER_MAX+1];
-    //CX3parser x3parser;
     
     socklen_t len = sizeof(client_addr);
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
-        
-        int recv_len = recvfrom(sockfd,buffer,RECV_BUFFER_MAX,0, (struct sockaddr *)&client_addr,&len);
+        int recv_len = recvfrom(*p_serve_sock,buffer,RECV_BUFFER_MAX,0, (struct sockaddr *)&client_addr,&len);
         if (recv_len > 0)
         {
             g_udp_recv_num++;
@@ -92,43 +95,31 @@ void* udpx3thread(void *addr)
             if (parse_ret == false)
             {
                 LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
-                close(sockfd);
+                close(*p_serve_sock);
                 exit(1);
             }            
         }
         else
         {
-            LOG(DEBUG,"the tcp connection broken or something else wrong");
-            close(sockfd);
+            LOG(DEBUG,"the connection broken or something else wrong");
+            close(*p_serve_sock);
             break;
         }
     }
     LOG(DEBUG,"thead exits");
 }
-void* tcpx3thread(void *addr)
-{   
-    struct sockaddr_in *p_serv_addr = (struct sockaddr_in *)addr;
-    int sockfd = socket(AF_INET,SOCK_STREAM,0);
-    if(sockfd < 0)
-    {
-        LOG(ERROR,"socket descriptor is invalid, %d:%s",errno,strerror(errno));
-        exit(1);
-    }
+void* tcpx3thread(void *pSocket)
+{  
+    int *p_serve_sock = (int *)pSocket;
     struct sockaddr_in client_addr;
     memset(&client_addr,0,sizeof(client_addr));
-    int brst = bind(sockfd,(struct sockaddr*)p_serv_addr,sizeof(struct sockaddr));
-    if(brst == -1)
-    {
-        LOG(ERROR,"error while binding address.");
-        exit(1);
-    }
-    if(listen(sockfd,1) == -1)
+    if(listen(*p_serve_sock,1) == -1)
     {
     	LOG(ERROR,"socket listening failed, %d:%s",errno,strerror(errno));
     	exit(1);
     }
     socklen_t len = sizeof(client_addr);
-    int client_sockfd = accept(sockfd, (struct sockaddr*)&client_addr, &len);
+    int client_sockfd = accept(*p_serve_sock, (struct sockaddr*)&client_addr, &len);
     if (client_sockfd < 0)
     {
     	LOG(ERROR,"failed to accept ");
@@ -155,7 +146,6 @@ void* tcpx3thread(void *addr)
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
-        
     	int recv_len = recv(client_sockfd,buffer,RECV_BUFFER_MAX,0);
         //int recv_len = recv(client_sockfd,buffer,123,0);
         if (recv_len > 0)
@@ -236,7 +226,7 @@ void* tcpx3thread(void *addr)
         {
         	LOG(DEBUG,"the connection broken or something else wrong");
             close(client_sockfd);
-            close(sockfd);
+            close(*p_serve_sock);
             break;
         }
     }
@@ -272,6 +262,7 @@ void sigint_handler(int sig)
 {
     if (sig == SIGINT)
     {
+        LOG(DEBUG,"receiving SIGINT signal");     
         if((ESRCH != pthread_kill(g_udpx3thNo,0)) 
              && (0 != pthread_cancel(g_udpx3thNo)))
         {
@@ -281,7 +272,7 @@ void sigint_handler(int sig)
              && (0 != pthread_cancel(g_tcpx3thNo)))
         {
             LOG(ERROR,"failed to cancel tcp thread");
-        }
+        }        
     }
 }
 
@@ -303,21 +294,20 @@ int main(int argc, char **argv)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(atoi(argv[2]));
     serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
-
-    int ret;
-    ret = pthread_create(&g_udpx3thNo,NULL,udpx3thread,&serv_addr);     
-    if (ret)                                                                                                                                         
+    int udp_socket = starupServSocket(serv_addr,SOCK_DGRAM);
+    int tcp_socket = starupServSocket(serv_addr,SOCK_STREAM);
+     
+    if (pthread_create(&g_udpx3thNo,NULL,udpx3thread,&udp_socket) != 0)                                                                                                                                         
     {                                                                                                                                                
         LOG(ERROR,"failed to create udp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
-    } 
-    ret = pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&serv_addr);     
-    if (ret)                                                                                                                                         
+    }   
+    if (pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&tcp_socket) != 0)                                                                                                                                         
     {                                                                                                                                                
         LOG(ERROR,"failed to create tcp thread, error No. is %d", ret);                                                                        
         exit(1);                                                                                                                                     
     } 
-    //getchar();      
+     
     if(pthread_join(g_tcpx3thNo,NULL) != 0)
     {
         LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");
@@ -326,6 +316,10 @@ int main(int argc, char **argv)
     {
         LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");
     }
+    
+    close(udp_socket);
+    close(tcp_socket);
+
     LOG(DEBUG,"=============================================================================================================================");
     if (g_pX3parserforTcp)
     {
