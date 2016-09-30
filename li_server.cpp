@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <signal.h>
 #include "li_server.h"
+#include "udpx3cachequeue.h"
 using namespace std;
 
 #define RECV_BUFFER_MAX 2048
