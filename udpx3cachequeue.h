@@ -7,6 +7,7 @@ struct UDP_X3
 {
     int pkg_len;
     u_char* p_pkg;
+    int flag;
 };
 class CUdpX3CacheQueue
 {

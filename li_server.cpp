@@ -19,6 +19,7 @@ unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
 
 pthread_t g_udpx3thNo, g_tcpx3thNo;
+pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int getContentLen(char* data)
 {
@@ -71,14 +72,48 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
     }
     return sockfd;
 }
-
+void * parseCachedX3(void *x3queue)
+{
+    CUdpX3CacheQueue *pQueue = (CUdpX3CacheQueue *)x3queue;
+    if(!g_pX3parserforUdp)
+    {
+        g_pX3parserforUdp = new CX3parser();
+    }
+    while(1)
+    {
+        //lock
+        pthread_mutex_lock(&g_mutex);
+        UDP_X3 *pX3 = pQueue->DeQueue();
+        // unlock   
+        pthread_mutex_unlock(&g_mutex);         
+        if (NULL == pX3)
+        {
+            sleep(1);
+            continue;
+        }
+        bool parse_ret = g_pX3parserforUdp->parse_x3(pX3->p_pkg,pX3->pkg_len);
+        if (parse_ret == false)
+        {
+            LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
+            exit(1);
+        }      
+    }
+    
+}
 void* udpx3thread(void *pSocket)
 { 
     int *p_serve_sock = (int *)pSocket;
     struct sockaddr_in client_addr;
     memset(&client_addr,0,sizeof(client_addr));
     unsigned char buffer[RECV_BUFFER_MAX+1];
-    
+    CUdpX3CacheQueue x3cachequeue;
+    pthread_t parsecachedx3thread;
+    int ret;
+    if ((ret = pthread_create(&parsecachedx3thread,NULL,parseCachedX3,&x3cachequeue)) != 0)                                                                                                                                         
+    {                                                                                                                                                
+        LOG(ERROR,"failed to create parsing cached x3 thread, error No. is %d", ret);                                                                        
+        exit(1);                                                                                                                                     
+    } 
     socklen_t len = sizeof(client_addr);
     while(1)
     {
@@ -88,17 +123,15 @@ void* udpx3thread(void *pSocket)
         {
             g_udp_recv_num++;
             LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
-            if(!g_pX3parserforUdp)
+            // lock
+            pthread_mutex_lock(&g_mutex);             
+            if((int ret = x3cachequeue.EnQueue(buffer,recv_len)) == -1)
             {
-                g_pX3parserforUdp = new CX3parser();
-            }            
-            bool parse_ret = g_pX3parserforUdp->parse_x3(buffer,recv_len);
-            if (parse_ret == false)
-            {
-                LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
-                close(*p_serve_sock);
+                LOG(ERROR,"failed to enqueue x3 pkg");
                 exit(1);
-            }            
+            }
+            // unlock  
+            pthread_mutex_unlock(&g_mutex);
         }
         else
         {
