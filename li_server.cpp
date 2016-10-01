@@ -84,6 +84,13 @@ void * parseCachedX3(void *x3queue)
         //lock
         pthread_mutex_lock(&g_mutex);
         UDP_X3 *pX3 = pQueue->DeQueue();
+        int len;
+        u_char *data;
+        if (pX3)
+        {
+            len = pX3->pkg_len;
+            data = pX3->p_pkg;
+        }
         // unlock   
         pthread_mutex_unlock(&g_mutex);         
         if (NULL == pX3)
@@ -91,7 +98,8 @@ void * parseCachedX3(void *x3queue)
             sleep(1);
             continue;
         }
-        bool parse_ret = g_pX3parserforUdp->parse_x3(pX3->p_pkg,pX3->pkg_len);
+        bool parse_ret = g_pX3parserforUdp->parse_x3(data,len);
+        delete [] data;
         if (parse_ret == false)
         {
             LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
