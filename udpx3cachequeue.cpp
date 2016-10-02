@@ -46,7 +46,7 @@ UDP_X3* CUdpX3CacheQueue::DeQueue()
 {
     if (IsEmpty())
     {
-        LOG(WARNING,"the queue is empty");
+        //LOG(WARNING,"the queue is empty");
         return NULL;
     }
     int old_head = head;

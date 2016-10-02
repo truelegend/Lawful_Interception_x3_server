@@ -133,7 +133,7 @@ void* udpx3thread(void *pSocket)
             LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
             pthread_mutex_lock(&g_mutex);             
-            if((int ret = x3cachequeue.EnQueue(buffer,recv_len)) == -1)
+            if(x3cachequeue.EnQueue(buffer,recv_len) == -1)
             {
                 LOG(ERROR,"failed to enqueue x3 pkg");
                 exit(1);
@@ -363,17 +363,17 @@ int main(int argc, char **argv)
     close(tcp_socket);
 
     LOG(DEBUG,"=============================================================================================================================");
-    if (g_pX3parserforTcp)
+    if (g_tcp_recv_num)
     {
         LOG(DEBUG,"x3 is over TCP, recv function returns %d times", g_tcp_recv_num);
         OutputStatics(g_pX3parserforTcp);
     }
-    if (g_pX3parserforUdp)
+    if (g_udp_recv_num)
     {
         LOG(DEBUG,"x3 is over UDP, recv function returns %d times", g_udp_recv_num);
         OutputStatics(g_pX3parserforUdp);
     }
-    if (!g_pX3parserforTcp && !g_pX3parserforUdp)
+    if (g_udp_recv_num == 0 && g_tcp_recv_num == 0)
     {
         LOG(DEBUG,"no X3 msg is received");
     }
