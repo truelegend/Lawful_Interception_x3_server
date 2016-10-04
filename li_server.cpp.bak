@@ -160,7 +160,7 @@ void* udpx3thread(void *pSocket)
             pthread_mutex_lock(&g_mutex);             
             if(x3cachequeue.EnQueue(buffer,recv_len) == -1)
             {
-                LOG(ERROR,"failed to enqueue x3 pkg, this is the %d x3 pkg",g_udp_recv_num);
+                LOG(ERROR,"failed to enqueue x3 pkg");
                 exit(1);
             }
             // unlock  
