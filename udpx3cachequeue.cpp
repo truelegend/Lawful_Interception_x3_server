@@ -53,7 +53,7 @@ UDP_X3* CUdpX3CacheQueue::DeQueue()
     capacity--;
     m_udp_x3_array[old_head].flag = 0;
     head = (head+1)%MAX_CACHED_UDP_X3_NUM;
-    LOG(DEBUG,"Have got the head of the queue: %d, head got out of queue", old_head);
+    //LOG(DEBUG,"Have got the head of the queue: %d, head got out of queue", old_head);
     return &m_udp_x3_array[old_head];
 }
 /*UDP_X3* CUdpX3CacheQueue::GetHeadOfQueue()

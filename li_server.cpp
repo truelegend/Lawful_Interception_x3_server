@@ -80,7 +80,7 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
     printf("the old recv buf size is %d\n",rcv_size);
     //exit(1);
 
-    int nRecvBuf=1024*1024*5;
+    int nRecvBuf=1024*1024*10;
     if(-1 == setsockopt(sockfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int)))
     {
         LOG(ERROR,"failed to set sockopt");	    
@@ -155,7 +155,7 @@ void* udpx3thread(void *pSocket)
         if (recv_len > 0)
         {
             g_udp_recv_num++;
-            LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
+            //LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
             pthread_mutex_lock(&g_mutex);             
             if(x3cachequeue.EnQueue(buffer,recv_len) == -1)

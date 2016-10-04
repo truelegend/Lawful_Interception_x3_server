@@ -2,7 +2,7 @@
 #define _X3_QUEUE_H
 
 #include "log.h"
-#define MAX_CACHED_UDP_X3_NUM 20000
+#define MAX_CACHED_UDP_X3_NUM 50000
 struct UDP_X3
 {
     int pkg_len;

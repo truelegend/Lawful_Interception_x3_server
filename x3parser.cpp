@@ -47,7 +47,7 @@ bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
         LOG(ERROR,"wrong parameters");
         return false;
     }
-    LOG(DEBUG,"x3 len is %d",x3_len);
+    //LOG(DEBUG,"x3 len is %d",x3_len);
     x3[x3_len] = '\0';
     m_x3 = x3;
     m_x3_len = x3_len;
@@ -214,15 +214,15 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     UDP_HDR *pHdr = (UDP_HDR *)body;
     unsigned short src_port = ntohs(pHdr->m_usSourPort);
     unsigned short dst_port = ntohs(pHdr->m_usDestPort);
-    LOG(DEBUG,"source port: %d",src_port);
-    LOG(DEBUG,"dst port: %d",dst_port);
+    //LOG(DEBUG,"source port: %d",src_port);
+    //LOG(DEBUG,"dst port: %d",dst_port);
     setPortPairInfo(src_port,dst_port);
     if (m_payloadtype == RTP)
     {
         if((src_port%2 == 0) && (dst_port%2 == 0))
         {
             m_real_rtptype = REAL_RTP;
-            LOG(DEBUG,"this is RTP msg");
+            //LOG(DEBUG,"this is RTP msg");
             (m_calldirection == FROMTARGET)?from_rtp_num++:to_rtp_num++;
         }
         else if((src_port%2 != 0) && (dst_port%2 != 0))
@@ -290,7 +290,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         {
             LOG(ERROR,"sending failed, %d:%s",errno,strerror(errno));
         }
-        LOG(DEBUG,"%d bytes sent out to vlc",n);
+        //LOG(DEBUG,"%d bytes sent out to vlc",n);
     }
 
     return true;
@@ -304,24 +304,17 @@ void CX3parser::parse_msrp(unsigned char *data)
 bool CX3parser::verifyX3hdrformat()
 {
     // <li-tid>700</li-tid>
-    if (getElementValue("li-tid",tmp))
+    if (getElementValue("li-tid",tmp) == false)
     {
-        LOG(DEBUG,"li-tid is %s",tmp);
+	    LOG(ERROR,"failed to get li-tid tag value");
+	            return false;
     }
-    else
-    {
-        LOG(ERROR,"failed to get li-tid tag value");
-        return false;
-    }
+
     // <stamp>2016-09-05 03:04:52</stamp>
-    if (getElementValue("stamp",tmp))
+    if (getElementValue("stamp",tmp) == false)
     {
-        LOG(DEBUG,"stamp is %s",tmp);
-    }
-    else
-    {
-        LOG(ERROR,"failed to get stamp tag value");
-        return false;
+	LOG(ERROR,"failed to get stamp tag value");
+	return false;
     }
     // <CallDirection>from-target</CallDirection>
     if (getElementValue("CallDirection",tmp))
@@ -341,7 +334,7 @@ bool CX3parser::verifyX3hdrformat()
             LOG(ERROR,"unrecoginzied CallDirection: %s", tmp);
             return false;
         }
-        LOG(DEBUG,"CallDirection is %s",tmp);
+        //LOG(DEBUG,"CallDirection is %s",tmp);
     }
     else
     {
@@ -349,14 +342,10 @@ bool CX3parser::verifyX3hdrformat()
         return false;
     }
     // <Correlation-id>1-12c-19-1-ccd699</Correlation-id>
-    if (getElementValue("Correlation-id",tmp))
+    if (getElementValue("Correlation-id",tmp) == false)
     {
-        LOG(DEBUG,"Correlation-id is %s",tmp);
-    }
-    else
-    {
-        LOG(ERROR,"failed to get Correlation-id tag value");
-        return false;
+	    LOG(ERROR,"failed to get Correlation-id tag value");                                                                                          
+	            return false; 
     }
     // <PayloadType>RTP</PayloadType>
     if (getElementValue("PayloadType",tmp))
@@ -372,8 +361,9 @@ bool CX3parser::verifyX3hdrformat()
         else
         {
             LOG(ERROR,"unrecoginzied PayloadType: %s", tmp);
+	    return false;
         }
-        LOG(DEBUG,"PayloadType is %s",tmp);
+        //LOG(DEBUG,"PayloadType is %s",tmp);
     }
     else
     {
@@ -384,7 +374,7 @@ bool CX3parser::verifyX3hdrformat()
     if (getElementValue("PayloadLength",tmp))
     {
         m_payloadlen = atoi(tmp);
-        LOG(DEBUG,"PayloadLength is %d",m_payloadlen);
+        //LOG(DEBUG,"PayloadLength is %d",m_payloadlen);
     }
     else
     {
