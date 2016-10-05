@@ -17,7 +17,8 @@ CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
-
+static const int       TIMEOUT = 5;
+int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -94,6 +95,14 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
 	exit(1);
     }
     printf("the new recv buf size is %d\n",rcv_size);
+    timeval tv;
+    tv.tv_sec = TIMEOUT;
+    tv.tv_usec = 0;
+    if(setsockopt(sockfd,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
+    {
+        LOG(ERROR,"failed to set TIMEOUT for receiving socket");
+        exit(1);
+    }
     //exit(1);
     return sockfd;
 }
@@ -118,10 +127,14 @@ void * parseCachedX3(void *x3queue)
         }
         // unlock   
         pthread_mutex_unlock(&g_mutex);         
-        if (NULL == pX3)
+        if (NULL == pX3 && parsethread_exit == 0)
         {
             sleep(0.01);
             continue;
+        }
+        if (NULL == pX3 && parsethread_exit == 1)
+        {
+            break;
         }
         bool parse_ret = g_pX3parserforUdp->parse_x3(data,len);
         delete [] data;
@@ -131,7 +144,7 @@ void * parseCachedX3(void *x3queue)
             exit(1);
         }      
     }
-    
+   LOG(DEBUG,"parsing thead exits");   
 }
 void* udpx3thread(void *pSocket)
 { 
@@ -169,11 +182,17 @@ void* udpx3thread(void *pSocket)
         else
         {
             LOG(DEBUG,"the connection broken or something else wrong");
-            close(*p_serve_sock);
+            //close(*p_serve_sock);
             break;
         }
     }
-    LOG(DEBUG,"thead exits");
+    parsethread_exit = 1;
+    if(pthread_join(parsecachedx3thread,NULL) != 0)
+    {
+        LOG(ERROR,"the udp thread will wait until the parsing thread exits, but seems it doesn't");
+    }
+
+    LOG(DEBUG,"udp thead exits");
 }
 void* tcpx3thread(void *pSocket)
 {  
@@ -189,8 +208,9 @@ void* tcpx3thread(void *pSocket)
     int client_sockfd = accept(*p_serve_sock, (struct sockaddr*)&client_addr, &len);
     if (client_sockfd < 0)
     {
-    	LOG(ERROR,"failed to accept ");
-    	exit(1);
+    	LOG(DEBUG,"failed to accept, tcp thread exits ");
+	return NULL;
+    	//exit(1);
     }
     LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
     unsigned char buffer[RECV_BUFFER_MAX+1];
@@ -293,11 +313,11 @@ void* tcpx3thread(void *pSocket)
         {
         	LOG(DEBUG,"the connection broken or something else wrong");
             close(client_sockfd);
-            close(*p_serve_sock);
+            //close(*p_serve_sock);
             break;
         }
     }
-    LOG(DEBUG,"thead exits");
+    LOG(DEBUG,"tcp thead exits");
 }
 void OutputStatics(CX3parser *pX3parser)
 {
@@ -383,7 +403,6 @@ int main(int argc, char **argv)
     {
         LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");
     }
-    
     close(udp_socket);
     close(tcp_socket);
 
