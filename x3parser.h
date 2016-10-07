@@ -16,6 +16,7 @@
 #include <exception>
 #include <stdexcept>
 #include <vector>
+#include <bitset>
 #include "log.h"
 
 #define IP_STRING_NUM 256
@@ -70,13 +71,33 @@ struct RTP_HDR
 };
 struct PORT_PARI_INFO
 {
+    PORT_PARI_INFO(unsigned short t_port,unsigned short u_port,unsigned int from_num,unsigned int to_num)
+    {
+	target_port     = t_port;
+	uag_port        = u_port;
+	from_target_num = from_num;
+	to_target_num   = to_num;
+        payload_type        = -1;
+	ssrc_from_target    = 0;
+	ssrc_to_target      = 0;
+	from_target_minseq  = -1;
+	from_target_maxseq  = -1;
+	to_target_minseq    = -1;
+	to_target_maxseq    = -1;
+    }
     unsigned short target_port;
     unsigned short uag_port;
     unsigned int   from_target_num;
     unsigned int   to_target_num;
+    std::bitset<65535> from_target_seqset;
+    std::bitset<65535> to_target_seqset;
     int            payload_type;
     unsigned int   ssrc_from_target;
     unsigned int   ssrc_to_target;
+    int            from_target_minseq;
+    int            from_target_maxseq; 
+    int            to_target_minseq;
+    int            to_target_maxseq;
 };
 
 
@@ -175,5 +196,6 @@ private:
         }
         return true;
     }
+    void SetMinMaxSeq(int &min,int &max,unsigned short seq);
 };
 #endif

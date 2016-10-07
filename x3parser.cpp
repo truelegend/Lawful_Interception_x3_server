@@ -216,7 +216,10 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     unsigned short dst_port = ntohs(pHdr->m_usDestPort);
     //LOG(DEBUG,"source port: %d",src_port);
     //LOG(DEBUG,"dst port: %d",dst_port);
-    setPortPairInfo(src_port,dst_port);
+    if(false == setPortPairInfo(src_port,dst_port))
+    {
+	    return 0;
+    }
     if (m_payloadtype == RTP)
     {
         if((src_port%2 == 0) && (dst_port%2 == 0))
@@ -271,6 +274,8 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
             {
                 return false;
             }
+	    m_cur_iter->from_target_seqset.set(rtp_seq);
+	    SetMinMaxSeq(m_cur_iter->from_target_minseq,m_cur_iter->from_target_maxseq,rtp_seq);
             break;
         }
         case TOTARGET:
@@ -280,6 +285,8 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
             {
                 return false;
             }
+	    m_cur_iter->to_target_seqset.set(rtp_seq);
+	    SetMinMaxSeq(m_cur_iter->to_target_minseq,m_cur_iter->to_target_maxseq,rtp_seq);
             break;
         }
     }
@@ -523,7 +530,7 @@ bool CX3parser::setPortPairInfo(unsigned short src_port, unsigned short dst_port
             vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(dst_port,src_port);
             if(iter == vecPort_pair_info.end())
             {
-                PORT_PARI_INFO portpartinfo = {dst_port,src_port,0,1,-1,0,0};
+                PORT_PARI_INFO portpartinfo(dst_port,src_port,0,1);
                 vecPort_pair_info.push_back(portpartinfo);
                 m_cur_iter = findExistedPortPair(dst_port,src_port);
             }
@@ -539,7 +546,7 @@ bool CX3parser::setPortPairInfo(unsigned short src_port, unsigned short dst_port
             vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(src_port,dst_port);
             if(iter == vecPort_pair_info.end())
             {
-                PORT_PARI_INFO portpartinfo = {src_port,dst_port,1,0,-1,0,0};
+                PORT_PARI_INFO portpartinfo(src_port,dst_port,1,0);
                 vecPort_pair_info.push_back(portpartinfo);
                 m_cur_iter = findExistedPortPair(src_port,dst_port);
             }
@@ -572,7 +579,25 @@ vector<PORT_PARI_INFO>::iterator CX3parser::findExistedPortPair(unsigned short t
     return iter;
 }
 
-
+void CX3parser::SetMinMaxSeq(int &min,int &max,unsigned short seq)
+{
+	if(min == -1)
+	{
+		max = min = seq;
+		return;
+	}
+	int TOL = 10;
+	if(seq < min && min-seq < TOL)
+	{
+		min = seq;
+		return;
+	}
+	if(seq > max || (seq < min && min-seq > TOL))
+	{
+		max = seq;
+		return;
+	}
+}
 
 
 
