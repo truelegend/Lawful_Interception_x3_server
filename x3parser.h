@@ -85,6 +85,22 @@ struct PORT_PARI_INFO
 	to_target_minseq    = -1;
 	to_target_maxseq    = -1;
     }
+    float GetFromRtpLossRate()
+    {
+	    return GetRtpLossRate(from_target_seqset.count(),from_target_minseq,from_target_maxseq);
+    }
+    float GetToRtpLossRate()
+    {
+	    return GetRtpLossRate(to_target_seqset.count(),to_target_minseq,to_target_maxseq);
+    }
+    float GetRtpLossRate(unsigned int real_sum, int min, int max)
+   {
+  if(real_sum == 0)
+	  return 0;
+  unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
+  assert(expected_sum >= real_sum);
+  return (expected_sum - real_sum) / expected_sum * 100;
+}
     unsigned short target_port;
     unsigned short uag_port;
     unsigned int   from_target_num;

@@ -319,14 +319,7 @@ void* tcpx3thread(void *pSocket)
     }
     LOG(DEBUG,"tcp thead exits");
 }
-float GetRtpLossRate(unsigned int real_sum, int min, int max)
-{
-  if(real_sum == 0)
-	  return 0;
-  unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
-  assert(expected_sum >= real_sum);
-  return (expected_sum - real_sum) / expected_sum * 100;
-}
+
 void OutputStatics(CX3parser *pX3parser)
 {
     LOG(DEBUG,"total x3 pkg num: %d, from_target num: %d(rtp %d + rtcp %d + msrp %d) + to_target num: %d (rtp %d + rtcp %d + msrp %d)",
@@ -340,8 +333,8 @@ void OutputStatics(CX3parser *pX3parser)
 	    if(iter->target_port%2 == 0)
 	    {
 	         LOG(DEBUG,"RTP info:"); 
-		float from_target_loss_rate = GetRtpLossRate(iter->from_target_seqset.count(),iter->from_target_minseq,iter->from_target_maxseq);
-		float to_target_loss_rate = GetRtpLossRate(iter->to_target_seqset.count(),iter->to_target_minseq,iter->to_target_maxseq);
+		float from_target_loss_rate = iter->GetFromRtpLossRate();
+		float to_target_loss_rate = iter->GetToRtpLossRate();
                 LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.2f%, to_target_loss_rate: %.2f%", 
             pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
             iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);
