@@ -72,11 +72,11 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         exit(1);
     }
     int rcv_size;
-    socklen_t optlen =  sizeof(rcv_size); 
+    socklen_t optlen =  sizeof(rcv_size);
     if(-1 == getsockopt(sockfd,SOL_SOCKET, SO_RCVBUF, &rcv_size, &optlen))
     {
         LOG(ERROR,"failed to get sockopt");
-	exit(1);
+        exit(1);
     }
     printf("the old recv buf size is %d\n",rcv_size);
     //exit(1);
@@ -84,15 +84,15 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
     int nRecvBuf=1024*1024*10;
     if(-1 == setsockopt(sockfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int)))
     {
-        LOG(ERROR,"failed to set sockopt");	    
-	exit(1);
+        LOG(ERROR,"failed to set sockopt");
+        exit(1);
     }
 
-    optlen =  sizeof(rcv_size); 
+    optlen =  sizeof(rcv_size);
     if(-1 == getsockopt(sockfd,SOL_SOCKET, SO_RCVBUF, &rcv_size, &optlen))
     {
         LOG(ERROR,"failed to get sockopt");
-	exit(1);
+        exit(1);
     }
     printf("the new recv buf size is %d\n",rcv_size);
     timeval tv;
@@ -125,8 +125,8 @@ void * parseCachedX3(void *x3queue)
             len = pX3->pkg_len;
             data = pX3->p_pkg;
         }
-        // unlock   
-        pthread_mutex_unlock(&g_mutex);         
+        // unlock
+        pthread_mutex_unlock(&g_mutex);
         if (NULL == pX3 && parsethread_exit == 0)
         {
             sleep(0.01);
@@ -142,12 +142,12 @@ void * parseCachedX3(void *x3queue)
         {
             LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
             exit(1);
-        }      
+        }
     }
-   LOG(DEBUG,"parsing thead exits");   
+    LOG(DEBUG,"parsing thead exits");
 }
 void* udpx3thread(void *pSocket)
-{ 
+{
     int *p_serve_sock = (int *)pSocket;
     struct sockaddr_in client_addr;
     memset(&client_addr,0,sizeof(client_addr));
@@ -156,10 +156,10 @@ void* udpx3thread(void *pSocket)
     pthread_t parsecachedx3thread;
     int ret;
     if ((ret = pthread_create(&parsecachedx3thread,NULL,parseCachedX3,&x3cachequeue)) != 0)
-    {                                                                                                                                                
-        LOG(ERROR,"failed to create parsing cached x3 thread, error No. is %d", ret);                                                                        
-        exit(1);                                                                                                                                     
-    } 
+    {
+        LOG(ERROR,"failed to create parsing cached x3 thread, error No. is %d", ret);
+        exit(1);
+    }
     socklen_t len = sizeof(client_addr);
     while(1)
     {
@@ -170,13 +170,13 @@ void* udpx3thread(void *pSocket)
             g_udp_recv_num++;
             //LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
-            pthread_mutex_lock(&g_mutex);             
+            pthread_mutex_lock(&g_mutex);
             if(x3cachequeue.EnQueue(buffer,recv_len) == -1)
             {
                 LOG(ERROR,"failed to enqueue x3 pkg, this is the %d x3 pkg",g_udp_recv_num);
                 exit(1);
             }
-            // unlock  
+            // unlock
             pthread_mutex_unlock(&g_mutex);
         }
         else
@@ -195,22 +195,22 @@ void* udpx3thread(void *pSocket)
     LOG(DEBUG,"udp thead exits");
 }
 void* tcpx3thread(void *pSocket)
-{  
+{
     int *p_serve_sock = (int *)pSocket;
     struct sockaddr_in client_addr;
     memset(&client_addr,0,sizeof(client_addr));
     if(listen(*p_serve_sock,1) == -1)
     {
-    	LOG(ERROR,"socket listening failed, %d:%s",errno,strerror(errno));
-    	exit(1);
+        LOG(ERROR,"socket listening failed, %d:%s",errno,strerror(errno));
+        exit(1);
     }
     socklen_t len = sizeof(client_addr);
     int client_sockfd = accept(*p_serve_sock, (struct sockaddr*)&client_addr, &len);
     if (client_sockfd < 0)
     {
-    	LOG(DEBUG,"failed to accept, tcp thread exits ");
-	return NULL;
-    	//exit(1);
+        LOG(DEBUG,"failed to accept, tcp thread exits ");
+        return NULL;
+        //exit(1);
     }
     LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
     unsigned char buffer[RECV_BUFFER_MAX+1];
@@ -223,22 +223,22 @@ void* tcpx3thread(void *pSocket)
     unsigned char x3_buffer[RECV_BUFFER_MAX+1];
     unsigned char *p = tmp_buffer;
     unsigned char *xmlrear = NULL;
-    
+
     if (!g_pX3parserforTcp)
     {
-         g_pX3parserforTcp = new CX3parser();
-    }  
+        g_pX3parserforTcp = new CX3parser();
+    }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
-    memset(&x3_buffer,0,sizeof(x3_buffer)); 
+    memset(&x3_buffer,0,sizeof(x3_buffer));
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
-    	int recv_len = recv(client_sockfd,buffer,RECV_BUFFER_MAX,0);
+        int recv_len = recv(client_sockfd,buffer,RECV_BUFFER_MAX,0);
         //int recv_len = recv(client_sockfd,buffer,123,0);
         if (recv_len > 0)
         {
             g_tcp_recv_num++;
-    	    LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
+            LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
             if((p - tmp_buffer) > sizeof(tmp_buffer))
@@ -246,7 +246,7 @@ void* tcpx3thread(void *pSocket)
                 LOG(ERROR,"seems not valid x3 msg, out of array");
                 exit(1);
             }
-            *p = '\0';            
+            *p = '\0';
             do
             {
                 if(more_body_num == -1)
@@ -257,14 +257,14 @@ void* tcpx3thread(void *pSocket)
                         LOG(DEBUG,"get content_len: %d", content_len);
                         if(content_len == -1)
                         {
-                            LOG(DEBUG,"Note: cannot find content_len, need to recv again!");  
+                            LOG(DEBUG,"Note: cannot find content_len, need to recv again!");
                             break;
                         }
                     }
-                    xmlrear = (unsigned char*)getXmlRear((char *)tmp_buffer); 
+                    xmlrear = (unsigned char*)getXmlRear((char *)tmp_buffer);
                     if (NULL == xmlrear)
                     {
-                        LOG(DEBUG,"Note: cannot find xml rear, need to recv again!");      
+                        LOG(DEBUG,"Note: cannot find xml rear, need to recv again!");
                         break;
                     }
                     xmlhdr_len = xmlrear - tmp_buffer;
@@ -275,7 +275,7 @@ void* tcpx3thread(void *pSocket)
                         more_body_num = content_len - buf_left_len;
                         LOG(DEBUG,"Note: need more body_num from recv: %d, need to recv again!",more_body_num);
                         break;
-                    } 
+                    }
                 }
                 else
                 {
@@ -286,14 +286,14 @@ void* tcpx3thread(void *pSocket)
                         break;
                     }
                 }
-                memcpy(x3_buffer,tmp_buffer,xmlhdr_len+content_len); 
-                LOG(DEBUG,"xmlhdr_len %d, content_len %d", xmlhdr_len,content_len);      
+                memcpy(x3_buffer,tmp_buffer,xmlhdr_len+content_len);
+                LOG(DEBUG,"xmlhdr_len %d, content_len %d", xmlhdr_len,content_len);
                 bool parse_ret = g_pX3parserforTcp->parse_x3(x3_buffer,xmlhdr_len+content_len);
                 if (parse_ret == false)
                 {
                     LOG(ERROR,"failed to parse this x3 pkg, pls check the X3 msg manually, the program is exiting!");
                     exit(1);
-                }  
+                }
                 int next_x3_len = p - tmp_buffer - (xmlhdr_len+content_len);
                 next_x3 = (next_x3_len>0)?true:false;
                 if (next_x3)
@@ -307,11 +307,11 @@ void* tcpx3thread(void *pSocket)
                 more_body_num = -1;
                 p = next_x3?tmp_buffer+next_x3_len:tmp_buffer;
                 xmlrear = NULL;
-            }while(next_x3);
+            } while(next_x3);
         }
         else
         {
-        	LOG(DEBUG,"the connection broken or something else wrong");
+            LOG(DEBUG,"the connection broken or something else wrong");
             close(client_sockfd);
             //close(*p_serve_sock);
             break;
@@ -323,35 +323,35 @@ void* tcpx3thread(void *pSocket)
 void OutputStatics(CX3parser *pX3parser)
 {
     LOG(DEBUG,"total x3 pkg num: %d, from_target num: %d(rtp %d + rtcp %d + msrp %d) + to_target num: %d (rtp %d + rtcp %d + msrp %d)",
-                pX3parser->x3_num,
-                pX3parser->from_target_num, pX3parser->from_rtp_num, pX3parser->from_rtcp_num, pX3parser->from_msrp_num,
-                pX3parser->to_target_num, pX3parser->to_rtp_num, pX3parser->to_rtcp_num, pX3parser->to_msrp_num);
+        pX3parser->x3_num,
+        pX3parser->from_target_num, pX3parser->from_rtp_num, pX3parser->from_rtcp_num, pX3parser->from_msrp_num,
+        pX3parser->to_target_num, pX3parser->to_rtp_num, pX3parser->to_rtcp_num, pX3parser->to_msrp_num);
     //LOG(DEBUG,"target ip: %s",pX3parser->target_ip);
     //LOG(DEBUG,"uag    ip: %s",pX3parser->uag_ip);
-        for(vector<PORT_PARI_INFO>::iterator iter = pX3parser->vecPort_pair_info.begin(); iter != pX3parser->vecPort_pair_info.end(); ++iter)
+    for(vector<PORT_PARI_INFO>::iterator iter = pX3parser->vecPort_pair_info.begin(); iter != pX3parser->vecPort_pair_info.end(); ++iter)
+    {
+        if(iter->target_port%2 == 0)
         {
-	    if(iter->target_port%2 == 0)
-	    {
-	         LOG(DEBUG,"RTP info:"); 
-		float from_target_loss_rate = iter->GetFromRtpLossRate();
-		float to_target_loss_rate = iter->GetToRtpLossRate();
-                LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.2f%, to_target_loss_rate: %.2f%", 
-            pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
-            iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);
-	    }
-	    else
-	    {
-                LOG(DEBUG,"RTCP info:"); 
-                LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d", 
-            pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num);
-         
-	    }
+            LOG(DEBUG,"RTP info:");
+            float from_target_loss_rate = iter->GetFromRtpLossRate();
+            float to_target_loss_rate = iter->GetToRtpLossRate();
+            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.2f%, to_target_loss_rate: %.2f%",
+                pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
+                iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);
         }
+        else
+        {
+            LOG(DEBUG,"RTCP info:");
+            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d",
+                pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num);
+
+        }
+    }
 }
 
 void Usage(char **argv)
 {
-    printf("usage:\n");  
+    printf("usage:\n");
     printf("%s listen_ip_address lister_port\n", argv[0]);
 }
 
@@ -359,28 +359,28 @@ void sigint_handler(int sig)
 {
     if (sig == SIGINT)
     {
-        LOG(DEBUG,"receiving SIGINT signal");     
-        if((ESRCH != pthread_kill(g_udpx3thNo,0)) 
-             && (0 != pthread_cancel(g_udpx3thNo)))
+        LOG(DEBUG,"receiving SIGINT signal");
+        if((ESRCH != pthread_kill(g_udpx3thNo,0))
+                && (0 != pthread_cancel(g_udpx3thNo)))
         {
             LOG(ERROR,"failed to cancel udp thread");
         }
-        if((ESRCH != pthread_kill(g_tcpx3thNo,0)) 
-             && (0 != pthread_cancel(g_tcpx3thNo)))
+        if((ESRCH != pthread_kill(g_tcpx3thNo,0))
+                && (0 != pthread_cancel(g_tcpx3thNo)))
         {
             LOG(ERROR,"failed to cancel tcp thread");
-        }        
+        }
     }
 }
 
 int main(int argc, char **argv)
 {
-	if (argc != 3)
-	{
-		LOG(ERROR,"wrong arguments number");
+    if (argc != 3)
+    {
+        LOG(ERROR,"wrong arguments number");
         Usage(argv);
-		exit(1);
-	}
+        exit(1);
+    }
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {
         LOG(ERROR,"cannot catch signal");
@@ -393,18 +393,18 @@ int main(int argc, char **argv)
     serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
     int udp_socket = starupServSocket(serv_addr,SOCK_DGRAM);
     int tcp_socket = starupServSocket(serv_addr,SOCK_STREAM);
-    int ret; 
-    if ((ret = pthread_create(&g_udpx3thNo,NULL,udpx3thread,&udp_socket)) != 0)                                                                                                                                         
-    {                                                                                                                                                
-        LOG(ERROR,"failed to create udp thread, error No. is %d", ret);                                                                        
-        exit(1);                                                                                                                                     
-    }   
-    if ((ret = pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&tcp_socket)) != 0)                                                                                                                                         
-    {                                                                                                                                                
-        LOG(ERROR,"failed to create tcp thread, error No. is %d", ret);                                                                        
-        exit(1);                                                                                                                                     
-    } 
-     
+    int ret;
+    if ((ret = pthread_create(&g_udpx3thNo,NULL,udpx3thread,&udp_socket)) != 0)
+    {
+        LOG(ERROR,"failed to create udp thread, error No. is %d", ret);
+        exit(1);
+    }
+    if ((ret = pthread_create(&g_tcpx3thNo,NULL,tcpx3thread,&tcp_socket)) != 0)
+    {
+        LOG(ERROR,"failed to create tcp thread, error No. is %d", ret);
+        exit(1);
+    }
+
     if(pthread_join(g_tcpx3thNo,NULL) != 0)
     {
         LOG(ERROR,"the main thread will wait until the receiving thread exits, but seems it doesn't");

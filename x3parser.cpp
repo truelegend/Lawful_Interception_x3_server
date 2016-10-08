@@ -8,14 +8,14 @@ CX3parser::CX3parser()
     m_payloadtype = NOTYPE;
     m_calldirection = NODIRECTION;
     m_real_rtptype = REAL_NO;
-    
+
     m_xmlrear      = NULL;
     memset(m_format_x3,'\0',sizeof(m_format_x3));
 
-    m_iptype       = NOIP; 
+    m_iptype       = NOIP;
     x3_num = 0;
     from_target_num = 0;
-    to_target_num = 0;     
+    to_target_num = 0;
     from_rtp_num = 0;
     from_rtcp_num = 0;
     from_msrp_num = 0;
@@ -58,8 +58,8 @@ bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
         return false;
     }
     x3_num++;
-    
-    bool ret = parse_x3body(m_x3+m_x3_len-m_payloadlen,m_payloadlen); 
+
+    bool ret = parse_x3body(m_x3+m_x3_len-m_payloadlen,m_payloadlen);
     formatX3();
     LOG(DEBUG,"dump the received x3 data:\n%s\n", m_format_x3);
     return ret;
@@ -105,25 +105,25 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
         LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
         return true;
     }
-    
+
     unsigned char *start = body;
     switch(*start>>4)
     {
-        case 4:
-            if (SetAndVerifyValue(m_iptype,NOIP,IPV4) == false)
-            {
-                return false;
-            }
-            break;
-        case 6:
-            if (SetAndVerifyValue(m_iptype,NOIP,IPV6) == false)
-            {
-                return false;
-            }
-            break;
-        default:
-            LOG(ERROR,"unrecoginzied ip type");
+    case 4:
+        if (SetAndVerifyValue(m_iptype,NOIP,IPV4) == false)
+        {
             return false;
+        }
+        break;
+    case 6:
+        if (SetAndVerifyValue(m_iptype,NOIP,IPV6) == false)
+        {
+            return false;
+        }
+        break;
+    default:
+        LOG(ERROR,"unrecoginzied ip type");
+        return false;
     }
 
     int ip_hdr_len, total_len;
@@ -139,12 +139,12 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     if (total_len != m_payloadlen)
     {
         LOG(ERROR,"the decoded payload len %d is not equal with the decalard one %d",total_len,m_payloadlen);
-        return false;    
-    }        
+        return false;
+    }
     start += ip_hdr_len;
     int udp_hdrbody_len = parse_udp_hdr(start);
-    if(udp_hdrbody_len == 0 || 
-        udp_hdrbody_len != (total_len - ip_hdr_len))
+    if(udp_hdrbody_len == 0 ||
+            udp_hdrbody_len != (total_len - ip_hdr_len))
     {
         LOG(ERROR,"the udp pkg len %d is not right (total_len - ip_hdr_len)", udp_hdrbody_len,total_len,ip_hdr_len);
         return false;
@@ -176,38 +176,38 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
 {
     switch(m_iptype)
     {
-        case IPV4:
+    case IPV4:
+    {
+        IPv4_HDR *pHdr = (IPv4_HDR *)body;
+        if (pHdr->m_cTypeOfProtocol != 17) // for RTP/RTCP, it is over UDP
         {
-            IPv4_HDR *pHdr = (IPv4_HDR *)body;
-            if (pHdr->m_cTypeOfProtocol != 17) // for RTP/RTCP, it is over UDP
-            {
-                LOG(ERROR,"the upper protocol is not UDP");
-                return false;
-            }
-            ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
-            total_len = ntohs(pHdr->m_sTotalLenOfPacket);
-            return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
-        }
-        case IPV6:
-        {
-            IPv6_HDR *pHdr = (IPv6_HDR *)body;
-            if (pHdr->m_ucNexthdr != 17) // for RTP/RTCP, it is over UDP
-            {
-                LOG(ERROR,"the upper protocol is not UDP");
-                return false;
-            }
-            // Won't consider extended ipv6 hdr for now
-            ip_hdr_len = sizeof(IPv6_HDR);
-            total_len = ip_hdr_len + ntohs(pHdr->m_usPayloadlen);
-            return getIPaddrAndVerify(&pHdr->m_in6addrSourIp,&pHdr->m_in6addrDestIp,AF_INET6);
-        }            
-        default:
-        {
-            LOG(ERROR,"unrecoginzied ip type");
+            LOG(ERROR,"the upper protocol is not UDP");
             return false;
         }
+        ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
+        total_len = ntohs(pHdr->m_sTotalLenOfPacket);
+        return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
     }
-     
+    case IPV6:
+    {
+        IPv6_HDR *pHdr = (IPv6_HDR *)body;
+        if (pHdr->m_ucNexthdr != 17) // for RTP/RTCP, it is over UDP
+        {
+            LOG(ERROR,"the upper protocol is not UDP");
+            return false;
+        }
+        // Won't consider extended ipv6 hdr for now
+        ip_hdr_len = sizeof(IPv6_HDR);
+        total_len = ip_hdr_len + ntohs(pHdr->m_usPayloadlen);
+        return getIPaddrAndVerify(&pHdr->m_in6addrSourIp,&pHdr->m_in6addrDestIp,AF_INET6);
+    }
+    default:
+    {
+        LOG(ERROR,"unrecoginzied ip type");
+        return false;
+    }
+    }
+
 }
 unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
 {
@@ -218,7 +218,7 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     //LOG(DEBUG,"dst port: %d",dst_port);
     if(false == setPortPairInfo(src_port,dst_port))
     {
-	    return 0;
+        return 0;
     }
     if (m_payloadtype == RTP)
     {
@@ -234,13 +234,13 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
             LOG(DEBUG,"this is RTCP msg");
             (m_calldirection == FROMTARGET)?from_rtcp_num++:to_rtcp_num++;
         }
-	    else
-	    {
-	        LOG(ERROR,"something wrong, how could src and dst port are not even or odd at the same tiem?");
-	        return 0;
-	    }
+        else
+        {
+            LOG(ERROR,"something wrong, how could src and dst port are not even or odd at the same tiem?");
+            return 0;
+        }
     }
-    else 
+    else
     {
         LOG(ERROR,"parse_udp_hdr function should be called only when payload type is RTP/RTCP");
         return 0;
@@ -267,28 +267,28 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 
     switch(m_calldirection)
     {
-        case FROMTARGET:
+    case FROMTARGET:
+    {
+        bool ret = SetAndVerifyValue(m_cur_iter->ssrc_from_target,0,ntohl(pHdr->ssrc));
+        if (ret == false)
         {
-            bool ret = SetAndVerifyValue(m_cur_iter->ssrc_from_target,0,ntohl(pHdr->ssrc));
-            if (ret == false)
-            {
-                return false;
-            }
-	    m_cur_iter->from_target_seqset.set(rtp_seq);
-	    SetMinMaxSeq(m_cur_iter->from_target_minseq,m_cur_iter->from_target_maxseq,rtp_seq);
-            break;
+            return false;
         }
-        case TOTARGET:
+        m_cur_iter->from_target_seqset.set(rtp_seq);
+        SetMinMaxSeq(m_cur_iter->from_target_minseq,m_cur_iter->from_target_maxseq,rtp_seq);
+        break;
+    }
+    case TOTARGET:
+    {
+        bool ret = SetAndVerifyValue(m_cur_iter->ssrc_to_target,0,ntohl(pHdr->ssrc));
+        if (ret == false)
         {
-            bool ret = SetAndVerifyValue(m_cur_iter->ssrc_to_target,0,ntohl(pHdr->ssrc));
-            if (ret == false)
-            {
-                return false;
-            }
-	    m_cur_iter->to_target_seqset.set(rtp_seq);
-	    SetMinMaxSeq(m_cur_iter->to_target_minseq,m_cur_iter->to_target_maxseq,rtp_seq);
-            break;
+            return false;
         }
+        m_cur_iter->to_target_seqset.set(rtp_seq);
+        SetMinMaxSeq(m_cur_iter->to_target_minseq,m_cur_iter->to_target_maxseq,rtp_seq);
+        break;
+    }
     }
     if (m_calldirection == FROMTARGET)
     {
@@ -313,15 +313,15 @@ bool CX3parser::verifyX3hdrformat()
     // <li-tid>700</li-tid>
     if (getElementValue("li-tid",tmp) == false)
     {
-	    LOG(ERROR,"failed to get li-tid tag value");
-	            return false;
+        LOG(ERROR,"failed to get li-tid tag value");
+        return false;
     }
 
     // <stamp>2016-09-05 03:04:52</stamp>
     if (getElementValue("stamp",tmp) == false)
     {
-	LOG(ERROR,"failed to get stamp tag value");
-	return false;
+        LOG(ERROR,"failed to get stamp tag value");
+        return false;
     }
     // <CallDirection>from-target</CallDirection>
     if (getElementValue("CallDirection",tmp))
@@ -351,8 +351,8 @@ bool CX3parser::verifyX3hdrformat()
     // <Correlation-id>1-12c-19-1-ccd699</Correlation-id>
     if (getElementValue("Correlation-id",tmp) == false)
     {
-	    LOG(ERROR,"failed to get Correlation-id tag value");                                                                                          
-	            return false; 
+        LOG(ERROR,"failed to get Correlation-id tag value");
+        return false;
     }
     // <PayloadType>RTP</PayloadType>
     if (getElementValue("PayloadType",tmp))
@@ -368,7 +368,7 @@ bool CX3parser::verifyX3hdrformat()
         else
         {
             LOG(ERROR,"unrecoginzied PayloadType: %s", tmp);
-	    return false;
+            return false;
         }
         //LOG(DEBUG,"PayloadType is %s",tmp);
     }
@@ -398,16 +398,28 @@ bool CX3parser::getIPaddrAndVerify(void *src, void *dst, int af)
         uag_ip    = new char[IP_STRING_NUM];
         switch(m_calldirection)
         {
-            case TOTARGET:
-                if(!inet_ntop(af,src,uag_ip,IP_STRING_NUM)) { LOG(ERROR,"failed to get ip addr");return false;}
-                if(!inet_ntop(af,dst,target_ip,IP_STRING_NUM)) {LOG(ERROR,"failed to get ip addr");return false;}
-                break;
-            case FROMTARGET:
-                if(!inet_ntop(af,dst,uag_ip,IP_STRING_NUM)) { LOG(ERROR,"failed to get ip addr");return false;}
-                if(!inet_ntop(af,src,target_ip,IP_STRING_NUM)) { LOG(ERROR,"failed to get ip addr");return false;}
-                break;
-            default:
-                break;
+        case TOTARGET:
+            if(!inet_ntop(af,src,uag_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            if(!inet_ntop(af,dst,target_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            break;
+        case FROMTARGET:
+            if(!inet_ntop(af,dst,uag_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            if(!inet_ntop(af,src,target_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            break;
+        default:
+            break;
         }
     }
     else
@@ -416,37 +428,55 @@ bool CX3parser::getIPaddrAndVerify(void *src, void *dst, int af)
         char tmp_uag_ip[IP_STRING_NUM];
         switch(m_calldirection)
         {
-            case TOTARGET:
-                if(!inet_ntop(af,src,tmp_uag_ip,IP_STRING_NUM)) {LOG(ERROR,"failed to get ip addr");return false;}
-                if(!inet_ntop(af,dst,tmp_target_ip,IP_STRING_NUM)) {LOG(ERROR,"failed to get ip addr");return false;}
-                break;
-            case FROMTARGET:
-                if(!inet_ntop(af,dst,tmp_uag_ip,IP_STRING_NUM)) { LOG(ERROR,"failed to get ip addr");return false;}
-                if(!inet_ntop(af,src,tmp_target_ip,IP_STRING_NUM)) { LOG(ERROR,"failed to get ip addr");return false;}
-                break;
-            default:
-                LOG(ERROR,"error direction");
+        case TOTARGET:
+            if(!inet_ntop(af,src,tmp_uag_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
                 return false;
+            }
+            if(!inet_ntop(af,dst,tmp_target_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            break;
+        case FROMTARGET:
+            if(!inet_ntop(af,dst,tmp_uag_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            if(!inet_ntop(af,src,tmp_target_ip,IP_STRING_NUM)) {
+                LOG(ERROR,"failed to get ip addr");
+                return false;
+            }
+            break;
+        default:
+            LOG(ERROR,"error direction");
+            return false;
         }
-        if(strcmp(target_ip,tmp_target_ip) != 0){LOG(ERROR,"target IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);return false;}
-        if(strcmp(uag_ip,tmp_uag_ip) != 0) {LOG(ERROR,"uag IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);return false;}
+        if(strcmp(target_ip,tmp_target_ip) != 0) {
+            LOG(ERROR,"target IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);
+            return false;
+        }
+        if(strcmp(uag_ip,tmp_uag_ip) != 0) {
+            LOG(ERROR,"uag IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);
+            return false;
+        }
     }
     return true;
 }
 void CX3parser::formatX3()
 {
-   memset(m_format_x3,0,sizeof(m_format_x3));
-   char* data = formatX3xml();
-   formatX3payload((unsigned char*)data);
+    memset(m_format_x3,0,sizeof(m_format_x3));
+    char* data = formatX3xml();
+    formatX3payload((unsigned char*)data);
 }
 
 char* CX3parser::formatX3xml()
 {
-   int r_anglebracket_num = 0;
-   char *start_format_x3 = m_format_x3;
+    int r_anglebracket_num = 0;
+    char *start_format_x3 = m_format_x3;
 
-   for(char *start = (char *)m_x3;start != (char *)m_xmlrear; start++)
-   {
+    for(char *start = (char *)m_x3; start != (char *)m_xmlrear; start++)
+    {
         *start_format_x3++ = *start;
         if (*start == '>')
         {
@@ -456,7 +486,7 @@ char* CX3parser::formatX3xml()
             }
             r_anglebracket_num++;
             if (r_anglebracket_num == 1 || r_anglebracket_num == 2
-                || (*(start+1) == '<' && *(start+2) == '/'))
+                    || (*(start+1) == '<' && *(start+2) == '/'))
             {
                 *start_format_x3++ = '\n';
             }
@@ -466,10 +496,10 @@ char* CX3parser::formatX3xml()
                 *start_format_x3++ = ' ';
                 *start_format_x3++ = ' ';
             }
-        }        
-   }
-   *start_format_x3++ = '\n';
-   return start_format_x3;
+        }
+    }
+    *start_format_x3++ = '\n';
+    return start_format_x3;
 }
 
 void CX3parser::formatX3payload(unsigned char *data)
@@ -492,7 +522,7 @@ void CX3parser::formatX3payload(unsigned char *data)
     while(start != end)
     {
         *data++ = map[*start/16];
-        *data++ = map[*start%16]; 
+        *data++ = map[*start%16];
         start++;
     }
     *start = '\n';
@@ -517,7 +547,7 @@ void CX3parser::formatX3payload(unsigned char *data)
 
 void CX3parser::initializeArguments()
 {
-  // TBD
+    // TBD
 }
 
 
@@ -525,43 +555,43 @@ bool CX3parser::setPortPairInfo(unsigned short src_port, unsigned short dst_port
 {
     switch(m_calldirection)
     {
-        case TOTARGET:
+    case TOTARGET:
+    {
+        vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(dst_port,src_port);
+        if(iter == vecPort_pair_info.end())
         {
-            vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(dst_port,src_port);
-            if(iter == vecPort_pair_info.end())
-            {
-                PORT_PARI_INFO portpartinfo(dst_port,src_port,0,1);
-                vecPort_pair_info.push_back(portpartinfo);
-                m_cur_iter = findExistedPortPair(dst_port,src_port);
-            }
-            else
-            {
-                iter->to_target_num++;
-                m_cur_iter = iter;
-            }
-            break;
-        } 
-        case FROMTARGET:
-        {
-            vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(src_port,dst_port);
-            if(iter == vecPort_pair_info.end())
-            {
-                PORT_PARI_INFO portpartinfo(src_port,dst_port,1,0);
-                vecPort_pair_info.push_back(portpartinfo);
-                m_cur_iter = findExistedPortPair(src_port,dst_port);
-            }
-            else
-            {
-                iter->from_target_num++;
-                m_cur_iter = iter;
-            }
-            break;
+            PORT_PARI_INFO portpartinfo(dst_port,src_port,0,1);
+            vecPort_pair_info.push_back(portpartinfo);
+            m_cur_iter = findExistedPortPair(dst_port,src_port);
         }
-        default:
+        else
         {
-            LOG(ERROR,"wrong direction");
-            return false;
+            iter->to_target_num++;
+            m_cur_iter = iter;
         }
+        break;
+    }
+    case FROMTARGET:
+    {
+        vector<PORT_PARI_INFO>::iterator iter = findExistedPortPair(src_port,dst_port);
+        if(iter == vecPort_pair_info.end())
+        {
+            PORT_PARI_INFO portpartinfo(src_port,dst_port,1,0);
+            vecPort_pair_info.push_back(portpartinfo);
+            m_cur_iter = findExistedPortPair(src_port,dst_port);
+        }
+        else
+        {
+            iter->from_target_num++;
+            m_cur_iter = iter;
+        }
+        break;
+    }
+    default:
+    {
+        LOG(ERROR,"wrong direction");
+        return false;
+    }
     }
     return true;
 }
@@ -570,8 +600,8 @@ vector<PORT_PARI_INFO>::iterator CX3parser::findExistedPortPair(unsigned short t
     vector<PORT_PARI_INFO>::iterator iter;
     for(iter = vecPort_pair_info.begin(); iter != vecPort_pair_info.end(); ++iter)
     {
-        if (iter->target_port == target_port 
-            && iter->uag_port == uag_port)
+        if (iter->target_port == target_port
+                && iter->uag_port == uag_port)
         {
             return iter;
         }
@@ -581,22 +611,22 @@ vector<PORT_PARI_INFO>::iterator CX3parser::findExistedPortPair(unsigned short t
 
 void CX3parser::SetMinMaxSeq(int &min,int &max,unsigned short seq)
 {
-	if(min == -1)
-	{
-		max = min = seq;
-		return;
-	}
-	int TOL = 10;
-	if(seq < min && min-seq < TOL)
-	{
-		min = seq;
-		return;
-	}
-	if(seq > max || (seq < min && min-seq > TOL))
-	{
-		max = seq;
-		return;
-	}
+    if(min == -1)
+    {
+        max = min = seq;
+        return;
+    }
+    int TOL = 10;
+    if(seq < min && min-seq < TOL)
+    {
+        min = seq;
+        return;
+    }
+    if(seq > max || (seq < min && min-seq > TOL))
+    {
+        max = seq;
+        return;
+    }
 }
 
 

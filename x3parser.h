@@ -50,13 +50,13 @@ struct UDP_HDR
 {
     unsigned short m_usSourPort;
     unsigned short m_usDestPort;
-    unsigned short m_usLength;  
-    unsigned short m_usCheckSum;  
-    
+    unsigned short m_usLength;
+    unsigned short m_usCheckSum;
+
 };
 struct RTP_HDR
 {
-             
+
     unsigned  cc:4; /* CSRC count */
     unsigned  x:1; /* header extension flag */
     unsigned  p:1; /* padding flag */
@@ -64,43 +64,43 @@ struct RTP_HDR
 
     unsigned  pt:7; /* payload type */
     unsigned  m:1; /* marker bit */
-    
-    unsigned short   seq;      /* sequence number            */  
-    unsigned int     ts;       /* timestamp                  */  
-    unsigned int     ssrc;     /* synchronization source     */  
+
+    unsigned short   seq;      /* sequence number            */
+    unsigned int     ts;       /* timestamp                  */
+    unsigned int     ssrc;     /* synchronization source     */
 };
 struct PORT_PARI_INFO
 {
     PORT_PARI_INFO(unsigned short t_port,unsigned short u_port,unsigned int from_num,unsigned int to_num)
     {
-	target_port     = t_port;
-	uag_port        = u_port;
-	from_target_num = from_num;
-	to_target_num   = to_num;
+        target_port     = t_port;
+        uag_port        = u_port;
+        from_target_num = from_num;
+        to_target_num   = to_num;
         payload_type        = -1;
-	ssrc_from_target    = 0;
-	ssrc_to_target      = 0;
-	from_target_minseq  = -1;
-	from_target_maxseq  = -1;
-	to_target_minseq    = -1;
-	to_target_maxseq    = -1;
+        ssrc_from_target    = 0;
+        ssrc_to_target      = 0;
+        from_target_minseq  = -1;
+        from_target_maxseq  = -1;
+        to_target_minseq    = -1;
+        to_target_maxseq    = -1;
     }
     float GetFromRtpLossRate()
     {
-	    return GetRtpLossRate(from_target_seqset.count(),from_target_minseq,from_target_maxseq);
+        return GetRtpLossRate(from_target_seqset.count(),from_target_minseq,from_target_maxseq);
     }
     float GetToRtpLossRate()
     {
-	    return GetRtpLossRate(to_target_seqset.count(),to_target_minseq,to_target_maxseq);
+        return GetRtpLossRate(to_target_seqset.count(),to_target_minseq,to_target_maxseq);
     }
     float GetRtpLossRate(unsigned int real_sum, int min, int max)
-   {
-  if(real_sum == 0)
-	  return 0;
-  unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
-  assert(expected_sum >= real_sum);
-  return (expected_sum - real_sum) / expected_sum * 100;
-}
+    {
+        if(real_sum == 0)
+            return 0;
+        unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
+        assert(expected_sum >= real_sum);
+        return (expected_sum - real_sum) / expected_sum * 100;
+    }
     unsigned short target_port;
     unsigned short uag_port;
     unsigned int   from_target_num;
@@ -111,7 +111,7 @@ struct PORT_PARI_INFO
     unsigned int   ssrc_from_target;
     unsigned int   ssrc_to_target;
     int            from_target_minseq;
-    int            from_target_maxseq; 
+    int            from_target_maxseq;
     int            to_target_minseq;
     int            to_target_maxseq;
 };
@@ -123,12 +123,14 @@ public:
     CX3parser();
     ~CX3parser();
     bool parse_x3(unsigned char *x3, int x3_len);
-    bool isIpv4type(){ return (m_iptype==IPV4)?true:false; }
+    bool isIpv4type() {
+        return (m_iptype==IPV4)?true:false;
+    }
 
     unsigned int x3_num;
     unsigned int from_target_num;
     unsigned int to_target_num;
-     
+
     unsigned int from_rtp_num;
     unsigned int from_rtcp_num;
     unsigned int from_msrp_num;
@@ -176,11 +178,11 @@ private:
     int m_calldirection;
     int m_real_rtptype;
     int m_iptype;
-    
+
     char m_format_x3[4096];
     unsigned char *m_xmlrear;
     std::vector<PORT_PARI_INFO>::iterator m_cur_iter;
-    
+
     bool getElementValue(const char* str, char* value);
     bool verifyX3hdrformat();
     char *getX3hdrrear();

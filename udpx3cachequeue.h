@@ -32,7 +32,7 @@ private:
     int rear;
     int head;
     UDP_X3 m_udp_x3_array[MAX_CACHED_UDP_X3_NUM];
-    
+
 };
 
 #endif

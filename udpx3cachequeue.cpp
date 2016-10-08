@@ -9,12 +9,12 @@ CUdpX3CacheQueue::CUdpX3CacheQueue()
 CUdpX3CacheQueue::~CUdpX3CacheQueue()
 {
     for(int i=0; i<MAX_CACHED_UDP_X3_NUM; i++)
-    {   
+    {
         if (m_udp_x3_array[i].flag)
         {
             LOG(WARNING,"there is cached x3 not handled");
             delete [] m_udp_x3_array[i].p_pkg;
-        }      
+        }
     }
 }
 int CUdpX3CacheQueue::EnQueue(const unsigned char *p, int len)
