@@ -21,7 +21,7 @@ static const int       TIMEOUT = 5;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_cond_t g_cond = PTHREAD_COND_INITIALIZER;
 int getContentLen(char* data)
 {
     string leftstr = "<" + string("PayloadLength") + ">";
@@ -117,7 +117,11 @@ void * parseCachedX3(void *x3queue)
     {
         //lock
         pthread_mutex_lock(&g_mutex);
-        UDP_X3 *pX3 = pQueue->DeQueue();
+        UDP_X3 *pX3;
+        while((pX3 = pQueue->DeQueue()) == NULL && parsethread_exit == 0)
+	{
+            pthread_cond_wait(&g_cond, &g_mutex);
+	}
         int len;
         u_char *data;
         if (pX3)
@@ -127,11 +131,6 @@ void * parseCachedX3(void *x3queue)
         }
         // unlock
         pthread_mutex_unlock(&g_mutex);
-        if (NULL == pX3 && parsethread_exit == 0)
-        {
-            sleep(0.01);
-            continue;
-        }
         if (NULL == pX3 && parsethread_exit == 1)
         {
             break;
@@ -176,6 +175,7 @@ void* udpx3thread(void *pSocket)
                 LOG(ERROR,"failed to enqueue x3 pkg, this is the %d x3 pkg",g_udp_recv_num);
                 exit(1);
             }
+	    pthread_cond_signal(&g_cond);
             // unlock
             pthread_mutex_unlock(&g_mutex);
         }
@@ -186,6 +186,8 @@ void* udpx3thread(void *pSocket)
             break;
         }
     }
+    // For scenario there no pkg is reveived at at all
+    pthread_cond_signal(&g_cond);  
     parsethread_exit = 1;
     if(pthread_join(parsecachedx3thread,NULL) != 0)
     {
