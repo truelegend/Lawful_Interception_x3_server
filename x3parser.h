@@ -22,14 +22,14 @@
 #define IP_STRING_NUM 256
 struct IPv4_HDR
 {
-    unsigned char    m_cVersionAndHeaderLen;
-    unsigned char    m_cTypeOfService;
-    unsigned short   m_sTotalLenOfPacket;
-    unsigned short   m_sPacketID;
-    unsigned short   m_sSliceinfo;
-    unsigned char    m_cTTL;
-    unsigned char    m_cTypeOfProtocol;
-    unsigned short   m_sCheckSum;
+    uint8_t    m_cVersionAndHeaderLen;
+    uint8_t    m_cTypeOfService;
+    uint16_t   m_sTotalLenOfPacket;
+    uint16_t   m_sPacketID;
+    uint16_t   m_sSliceinfo;
+    uint8_t    m_cTTL;
+    uint8_t    m_cTypeOfProtocol;
+    uint16_t   m_sCheckSum;
     struct in_addr   m_in4addrSourIp;
     struct in_addr   m_in4addrDestIp;
     //unsigned int m_uiSourIp;
@@ -37,10 +37,10 @@ struct IPv4_HDR
 };
 struct IPv6_HDR
 {
-    unsigned int m_version_class_flowlabel;
-    unsigned short m_usPayloadlen;
-    unsigned char  m_ucNexthdr;
-    unsigned char  m_ucHoplimit;
+    uint32_t m_version_class_flowlabel;
+    uint16_t m_usPayloadlen;
+    uint8_t  m_ucNexthdr;
+    uint8_t  m_ucHoplimit;
     struct in6_addr   m_in6addrSourIp;
     struct in6_addr   m_in6addrDestIp;
     //unsigned char  m_ucSrcIp[16];
@@ -48,10 +48,10 @@ struct IPv6_HDR
 };
 struct UDP_HDR
 {
-    unsigned short m_usSourPort;
-    unsigned short m_usDestPort;
-    unsigned short m_usLength;
-    unsigned short m_usCheckSum;
+    uint16_t m_usSourPort;
+    uint16_t m_usDestPort;
+    uint16_t m_usLength;
+    uint16_t m_usCheckSum;
 
 };
 struct RTP_HDR
@@ -65,9 +65,9 @@ struct RTP_HDR
     unsigned  pt:7; /* payload type */
     unsigned  m:1; /* marker bit */
 
-    unsigned short   seq;      /* sequence number            */
-    unsigned int     ts;       /* timestamp                  */
-    unsigned int     ssrc;     /* synchronization source     */
+    uint16_t   seq;      /* sequence number            */
+    uint32_t     ts;       /* timestamp                  */
+    uint32_t     ssrc;     /* synchronization source     */
 };
 struct PORT_PARI_INFO
 {
