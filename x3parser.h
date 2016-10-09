@@ -105,8 +105,8 @@ struct PORT_PARI_INFO
     unsigned short uag_port;
     unsigned int   from_target_num;
     unsigned int   to_target_num;
-    std::bitset<65535> from_target_seqset;
-    std::bitset<65535> to_target_seqset;
+    std::bitset<65536> from_target_seqset;
+    std::bitset<65536> to_target_seqset;
     int            payload_type;
     unsigned int   ssrc_from_target;
     unsigned int   ssrc_to_target;
