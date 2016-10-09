@@ -17,7 +17,7 @@ CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
-static const int       TIMEOUT = 5;
+unsigned int       TIMEOUT = 30;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -78,7 +78,7 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         LOG(ERROR,"failed to get sockopt");
         exit(1);
     }
-    printf("the old recv buf size is %d\n",rcv_size);
+    LOG(DEBUG,"the old recv buf size is %d",rcv_size);
     //exit(1);
 
     int nRecvBuf=1024*1024*10;
@@ -94,7 +94,7 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         LOG(ERROR,"failed to get sockopt");
         exit(1);
     }
-    printf("the new recv buf size is %d\n",rcv_size);
+    LOG(DEBUG,"the new recv buf size is %d",rcv_size);
     timeval tv;
     tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
@@ -143,7 +143,7 @@ void * parseCachedX3(void *x3queue)
             exit(1);
         }
     }
-    LOG(DEBUG,"parsing thead exits");
+    LOG(DEBUG,"parsing thread exits");
 }
 void* udpx3thread(void *pSocket)
 {
@@ -160,6 +160,9 @@ void* udpx3thread(void *pSocket)
         exit(1);
     }
     socklen_t len = sizeof(client_addr);
+    timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
@@ -167,6 +170,14 @@ void* udpx3thread(void *pSocket)
         if (recv_len > 0)
         {
             g_udp_recv_num++;
+	    if(g_udp_recv_num == 1)
+	    {
+	        if(setsockopt(*p_serve_sock,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
+                {
+                    LOG(ERROR,"failed to set TIMEOUT for receiving socket");
+                    exit(1);
+                }
+	    }
             //LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
             pthread_mutex_lock(&g_mutex);
@@ -187,14 +198,14 @@ void* udpx3thread(void *pSocket)
         }
     }
     // For scenario there no pkg is reveived at at all
-    pthread_cond_signal(&g_cond);  
     parsethread_exit = 1;
+    pthread_cond_signal(&g_cond);  
     if(pthread_join(parsecachedx3thread,NULL) != 0)
     {
         LOG(ERROR,"the udp thread will wait until the parsing thread exits, but seems it doesn't");
     }
 
-    LOG(DEBUG,"udp thead exits");
+    LOG(DEBUG,"udp thread exits");
 }
 void* tcpx3thread(void *pSocket)
 {
@@ -377,12 +388,14 @@ void sigint_handler(int sig)
 
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc < 3)
     {
         LOG(ERROR,"wrong arguments number");
         Usage(argv);
         exit(1);
     }
+    if (argc == 4)
+	    TIMEOUT = atoi(argv[3]);
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {
         LOG(ERROR,"cannot catch signal");
