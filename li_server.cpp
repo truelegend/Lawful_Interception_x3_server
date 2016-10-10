@@ -17,7 +17,7 @@ CX3parser *g_pX3parserforUdp = NULL;
 CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
-unsigned int       TIMEOUT = 30;
+unsigned int       TIMEOUT = 60;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -204,7 +204,7 @@ void* udpx3thread(void *pSocket)
     {
         LOG(ERROR,"the udp thread will wait until the parsing thread exits, but seems it doesn't");
     }
-
+    pthread_cancel(g_tcpx3thNo);
     LOG(DEBUG,"udp thread exits");
 }
 void* tcpx3thread(void *pSocket)
@@ -330,6 +330,7 @@ void* tcpx3thread(void *pSocket)
             break;
         }
     }
+    pthread_cancel(g_udpx3thNo);
     LOG(DEBUG,"tcp thead exits");
 }
 

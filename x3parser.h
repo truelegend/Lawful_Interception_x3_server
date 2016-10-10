@@ -95,6 +95,7 @@ struct PORT_PARI_INFO
     }
     float GetRtpLossRate(unsigned int real_sum, int min, int max)
     {
+	LOG(DEBUG,"real_sum %d, min seq %d, max seq %d",real_sum,min,max);
         if(real_sum == 0)
             return 0;
         unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
