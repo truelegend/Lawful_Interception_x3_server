@@ -35,8 +35,8 @@ CX3parser::CX3parser()
 
 CX3parser::~CX3parser()
 {
-    delete target_ip;
-    delete uag_ip;
+    delete[] target_ip;
+    delete[] uag_ip;
 }
 
 
@@ -48,7 +48,7 @@ bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
         return false;
     }
     //LOG(DEBUG,"x3 len is %d",x3_len);
-    x3[x3_len] = '\0';
+    //x3[x3_len] = '\0';
     m_x3 = x3;
     m_x3_len = x3_len;
 
@@ -525,7 +525,7 @@ void CX3parser::formatX3payload(unsigned char *data)
         *data++ = map[*start%16];
         start++;
     }
-    *start = '\n';
+    *data = '\n';
 }
 
 /*bool CX3parser::setAndVerifyIPtype(int iptype)
