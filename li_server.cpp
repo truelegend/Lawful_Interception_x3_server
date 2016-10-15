@@ -192,7 +192,7 @@ void* udpx3thread(void *pSocket)
         }
         else
         {
-            LOG(DEBUG,"the connection broken or something else wrong");
+            LOG(DEBUG,"recvfrom funtion return <= 0");
             //close(*p_serve_sock);
             break;
         }
@@ -324,7 +324,7 @@ void* tcpx3thread(void *pSocket)
         }
         else
         {
-            LOG(DEBUG,"the connection broken or something else wrong");
+            LOG(DEBUG,"recv funtion return <= 0");
             close(client_sockfd);
             //close(*p_serve_sock);
             break;

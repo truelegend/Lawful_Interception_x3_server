@@ -1,5 +1,8 @@
 *.o
 li_server
 *.exe
-*.pcap *.cap
+*.pcap 
+*.cap 
+*.gch
 test.cpp
+val
