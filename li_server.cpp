@@ -243,6 +243,9 @@ void* tcpx3thread(void *pSocket)
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
+    timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
@@ -251,7 +254,15 @@ void* tcpx3thread(void *pSocket)
         if (recv_len > 0)
         {
             g_tcp_recv_num++;
-            LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
+	    if(g_tcp_recv_num == 1)
+	    {
+	        if(setsockopt(client_sockfd,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
+                {
+                    LOG(ERROR,"failed to set TIMEOUT for receiving socket");
+                    exit(1);
+                }
+	    }
+	    LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
             if((p - tmp_buffer) > sizeof(tmp_buffer))
@@ -349,7 +360,7 @@ void OutputStatics(CX3parser *pX3parser)
             LOG(DEBUG,"RTP info:");
             float from_target_loss_rate = iter->GetFromRtpLossRate();
             float to_target_loss_rate = iter->GetToRtpLossRate();
-            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.2f%, to_target_loss_rate: %.2f%",
+            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.3f%, to_target_loss_rate: %.3f%",
                 pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
                 iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);
         }

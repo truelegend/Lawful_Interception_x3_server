@@ -100,7 +100,9 @@ struct PORT_PARI_INFO
             return 0;
         unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
         assert(expected_sum >= real_sum);
-        return (expected_sum - real_sum) / expected_sum * 100;
+        float rate =  (float)(expected_sum - real_sum) / expected_sum * 100;
+	//printf("it is: %d, %d, %.6f\n",expected_sum - real_sum,expected_sum,rate);
+	return rate;
     }
     unsigned short target_port;
     unsigned short uag_port;
