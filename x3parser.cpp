@@ -102,6 +102,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     //LOG(DEBUG,"Got the correct beginning of x3 body");
     if(m_payloadtype == MSRP)
     {
+	(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
         LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
         return true;
     }
@@ -513,8 +514,8 @@ void CX3parser::formatX3payload(unsigned char *data)
 
     if (m_payloadtype == MSRP)
     {
-        LOG(ERROR,"msrp???????????????????");
-        memcpy(m_format_x3,data,m_payloadlen);
+        memcpy(data,start,m_payloadlen);
+	*(data + m_payloadlen) = '\0';
         return;
     }
     char map[] = "0123456789abcdef";
