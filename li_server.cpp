@@ -18,6 +18,8 @@ CX3parser *g_pX3parserforTcp = NULL;
 unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
 unsigned int       TIMEOUT = 60;
+unsigned int       timeout = 2;
+bool g_benablePcapFile = false;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -161,7 +163,7 @@ void* udpx3thread(void *pSocket)
     }
     socklen_t len = sizeof(client_addr);
     timeval tv;
-    tv.tv_sec = 2;
+    tv.tv_sec = timeout;
     tv.tv_usec = 0;
     while(1)
     {
@@ -244,7 +246,7 @@ void* tcpx3thread(void *pSocket)
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
     timeval tv;
-    tv.tv_sec = 2;
+    tv.tv_sec = timeout;
     tv.tv_usec = 0;
     while(1)
     {
@@ -376,8 +378,14 @@ void OutputStatics(CX3parser *pX3parser)
 
 void Usage(char **argv)
 {
-    printf("usage:\n");
-    printf("%s listen_ip_address lister_port\n", argv[0]);
+    printf("usage:\n\n%s -l local_ip:local_port [optional options]\n\n", argv[0]);
+    printf("    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
+	   "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
+	   "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
+	   "    -f : specify the original pcap file to be compared with received x3\n\n"
+	   );
+
+    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000 -T 10 -w /tmp/my-li.log\n\n");
 }
 
 void sigint_handler(int sig)
@@ -398,16 +406,74 @@ void sigint_handler(int sig)
     }
 }
 
+bool parseIPPort(const char *optarg, char *str_ip, char *str_port)
+{
+    assert(optarg != NULL);
+    const char *pc = strchr(optarg,':');
+    if(NULL == pc || pc == optarg)
+    {
+        printf("missing ':' between ip and port");
+	return false;
+    }
+    assert(*(pc+1) != '\0');
+
+    memcpy(str_ip,optarg,pc-optarg);
+    str_ip[pc-optarg] = '\0';
+    strcpy(str_port,pc+1);
+    printf("%s------%s\n",str_ip,str_port);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    char str_ip[20];
+    char str_port[10];
+    bool b_getAddr = false;
+    const char *argus = "l:f:t:T:w:h";
+    int opt;
+    while ((opt = getopt(argc, argv, argus)) != -1)
     {
-        LOG(ERROR,"wrong arguments number");
-        Usage(argv);
+	switch(opt)
+	{
+            case 'f':
+	        g_benablePcapFile = true;
+		break;
+	    case 'l':
+		if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
+		{
+		    Usage(argv);
+	            exit(1);	    
+		}
+		break;
+	    case 'T':
+		TIMEOUT = atoi(optarg);
+		break;
+	    case 't':
+		timeout = atoi(optarg);
+		break;
+	    case 'w':
+                if(CLog::GetInstance(optarg) == NULL)
+		{
+		    printf("failed to get the instance of log class, exit\n");
+		    exit(1); 
+		}
+		break;
+	    case 'h':
+	    case ':':
+	    case '?':
+		Usage(argv);
+		exit(1);
+		break;
+	    default:
+		break;
+	}
+    }
+    if(b_getAddr == false)
+    {
+        printf("you should at least specify the ip:port with -l\n");
+	Usage(argv);    
         exit(1);
     }
-    if (argc == 4)
-	    TIMEOUT = atoi(argv[3]);
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {
         LOG(ERROR,"cannot catch signal");
@@ -416,8 +482,8 @@ int main(int argc, char **argv)
     struct sockaddr_in serv_addr;
     memset(&serv_addr,0,sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(argv[2]));
-    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(atoi(str_port));
+    serv_addr.sin_addr.s_addr = inet_addr(str_ip);
     int udp_socket = starupServSocket(serv_addr,SOCK_DGRAM);
     int tcp_socket = starupServSocket(serv_addr,SOCK_STREAM);
     int ret;

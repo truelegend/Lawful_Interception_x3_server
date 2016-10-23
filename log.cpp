@@ -1,8 +1,8 @@
 #include "log.h"
 CLog* CLog::instance = NULL;
-CLog::CLog()
+CLog::CLog(const char *logfile)
 {
-    m_logfile = fopen("/tmp/li.log", "w");
+    m_logfile = fopen(logfile, "w");
     if (!m_logfile)
     {
         printf("unable to open log file, exit\n");
@@ -23,11 +23,11 @@ CLog::~CLog()
     if (instance)
         delete instance;
 }
-CLog* CLog::GetInstance()
+CLog* CLog::GetInstance(const char* logfile)
 {
     if (!instance)
     {
-        instance = new CLog();
+        instance = new CLog(logfile);
     }
     return instance;
 }
