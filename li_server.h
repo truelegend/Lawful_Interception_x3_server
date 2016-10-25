@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include "x3parser.h"
 #include "log.h"
-
+#include "mediapcaploader.h"
 int getContentLen(char* data);
 char *getXmlRear(char *data);
 void sigint_handler(int sig);
