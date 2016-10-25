@@ -31,6 +31,8 @@ CX3parser::CX3parser()
     peeraddr.sin_family = AF_INET;
     peeraddr.sin_port = htons(40000);
     peeraddr.sin_addr.s_addr = inet_addr("10.2.1.75");
+
+    m_benableCompare = false;
 }
 
 CX3parser::~CX3parser()
@@ -160,7 +162,11 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     {
         return parse_rtp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
     }
-    return true;
+    else if(m_real_rtptype == REAL_RTCP)
+    {
+	return parse_rtcp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
+    }
+    return false;
 }
 char* CX3parser::getX3hdrrear()
 {
@@ -249,6 +255,15 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     return ntohs(pHdr->m_usLength);
 }
 
+bool CX3parser::parse_rtcp(unsigned char *data, int rtcp_len)
+{
+   if (m_benableCompare == true)                                                                                                                     
+   {
+        return COMPARE_RTCP(m_xmlrear,m_payloadlen,m_calldirection);                                                                           
+   }
+   return true;  
+}
+ 
 bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 {
     RTP_HDR *pHdr = (RTP_HDR *)data;
@@ -291,6 +306,10 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         break;
     }
     }
+    if (m_benableCompare == true)
+    {
+        return COMPARE_RTP(m_xmlrear,m_payloadlen,rtp_seq,m_calldirection);
+    }
     if (m_calldirection == FROMTARGET)
     {
         int n = sendto(sock,data,rtp_len,0,(struct sockaddr *)&peeraddr,sizeof(peeraddr));
@@ -304,9 +323,9 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     return true;
 }
 
-void CX3parser::parse_msrp(unsigned char *data)
+bool CX3parser::parse_msrp(unsigned char *data)
 {
-
+    return true;
 }
 
 bool CX3parser::verifyX3hdrformat()

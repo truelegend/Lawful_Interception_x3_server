@@ -18,7 +18,7 @@
 #include <vector>
 #include <bitset>
 #include "log.h"
-
+#include "mediapcaploader.h"
 #define IP_STRING_NUM 256
 struct IPv4_HDR
 {
@@ -129,7 +129,7 @@ public:
     bool isIpv4type() {
         return (m_iptype==IPV4)?true:false;
     }
-
+    void SetEnableCompare(bool b){m_benableCompare = b;}
     unsigned int x3_num;
     unsigned int from_target_num;
     unsigned int to_target_num;
@@ -193,7 +193,8 @@ private:
     bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
     unsigned short parse_udp_hdr(unsigned char *body);
     bool parse_rtp(unsigned char *data,int rtp_len);
-    void parse_msrp(unsigned char *data);
+    bool parse_rtcp(unsigned char *data,int rtcp_len);
+    bool parse_msrp(unsigned char *data);
     bool getIPaddrAndVerify(void *src, void *dst, int af);
     void formatX3();
     char* formatX3xml();
@@ -218,5 +219,6 @@ private:
         return true;
     }
     void SetMinMaxSeq(int &min,int &max,unsigned short seq);
+    bool m_benableCompare;
 };
 #endif

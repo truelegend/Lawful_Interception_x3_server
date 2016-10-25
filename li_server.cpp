@@ -80,7 +80,7 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         LOG(ERROR,"failed to get sockopt");
         exit(1);
     }
-    LOG(DEBUG,"the old recv buf size is %d",rcv_size);
+    //LOG(DEBUG,"the old recv buf size is %d",rcv_size);
     //exit(1);
 
     int nRecvBuf=1024*1024*10;
@@ -96,7 +96,7 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         LOG(ERROR,"failed to get sockopt");
         exit(1);
     }
-    LOG(DEBUG,"the new recv buf size is %d",rcv_size);
+    //LOG(DEBUG,"the new recv buf size is %d",rcv_size);
     timeval tv;
     tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
@@ -114,6 +114,7 @@ void * parseCachedX3(void *x3queue)
     if(!g_pX3parserforUdp)
     {
         g_pX3parserforUdp = new CX3parser();
+	g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
     }
     while(1)
     {
@@ -242,6 +243,7 @@ void* tcpx3thread(void *pSocket)
     if (!g_pX3parserforTcp)
     {
         g_pX3parserforTcp = new CX3parser();
+	g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
@@ -374,18 +376,27 @@ void OutputStatics(CX3parser *pX3parser)
 
         }
     }
+    if(g_benablePcapFile == true)
+    {
+        LOG(DEBUG,"######since the original pcap file is supplied, output the statics:######");
+	CMediaPcapLoader::GetInstance()->OutputStaticsFromPcap();
+    }
 }
 
 void Usage(char **argv)
 {
     printf("usage:\n\n%s -l local_ip:local_port [optional options]\n\n", argv[0]);
-    printf("    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
+    printf("    -l : mandatory arguments, specify the local ip and port for listening x3, separated by ':'\n\n"
+	   "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
 	   "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
 	   "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
 	   "    -f : specify the original pcap file to be compared with received x3\n\n"
 	   );
 
-    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000 -T 10 -w /tmp/my-li.log\n\n");
+    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000\n\n"
+	   "    or\n\n"
+	   "    ./li_server -l 10.2.22.150:20000 -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
+	   );
 }
 
 void sigint_handler(int sig)
@@ -420,7 +431,6 @@ bool parseIPPort(const char *optarg, char *str_ip, char *str_port)
     memcpy(str_ip,optarg,pc-optarg);
     str_ip[pc-optarg] = '\0';
     strcpy(str_port,pc+1);
-    printf("%s------%s\n",str_ip,str_port);
     return true;
 }
 
@@ -437,6 +447,11 @@ int main(int argc, char **argv)
 	{
             case 'f':
 	        g_benablePcapFile = true;
+		if(LOAD_PCAP(optarg) == false)
+		{
+		    printf("failed to load pcap file, exit");
+		    exit(1);
+		}
 		break;
 	    case 'l':
 		if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
