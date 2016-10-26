@@ -677,7 +677,7 @@ bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
         return false;
     }
     DTMF_2833 * pDTMF = (DTMF_2833 *)dtmf;
-    if(pDTMF->event >=0 && pDTMF->event <=16)
+    if(pDTMF->event <=16)
     {
 	LOG(DEBUG,"Valid dtmf pkg, event: %d",pDTMF->event);
 	pDTMF->E == 1?b_end=true:b_end=false;
