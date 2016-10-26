@@ -69,6 +69,16 @@ struct RTP_HDR
     uint32_t     ts;       /* timestamp                  */
     uint32_t     ssrc;     /* synchronization source     */
 };
+
+struct DTMF_2833
+{
+    uint8_t event;
+    unsigned  volume:6;
+    unsigned R:1;
+    unsigned E:1;
+    uint16_t duration;
+};
+
 struct PORT_PARI_INFO
 {
     PORT_PARI_INFO(unsigned short t_port,unsigned short u_port,unsigned int from_num,unsigned int to_num)
@@ -196,6 +206,7 @@ private:
     bool parse_rtcp(unsigned char *data,int rtcp_len);
     bool parse_msrp(unsigned char *data);
     bool getIPaddrAndVerify(void *src, void *dst, int af);
+    bool IsValidDTMF(u_char *dtmf, int dtmf_len,bool & b_end);
     void formatX3();
     char* formatX3xml();
     void formatX3payload(unsigned char *data);
@@ -213,7 +224,7 @@ private:
         }
         else if (argu != newValue)
         {
-            LOG(ERROR,"should be something wrong, the previous is 0x%x, the current is 0x%x",argu, newValue);
+            LOG(DEBUG,"maybe something is wrong, the previous is 0x%x, the current is 0x%x, need to check further",argu, newValue);
             return false;
         }
         return true;

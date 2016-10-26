@@ -115,12 +115,14 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     case 4:
         if (SetAndVerifyValue(m_iptype,NOIP,IPV4) == false)
         {
+	    LOG(ERROR,"ip type cannot change!");
             return false;
         }
         break;
     case 6:
         if (SetAndVerifyValue(m_iptype,NOIP,IPV6) == false)
         {
+	    LOG(ERROR,"ip type cannot change!");
             return false;
         }
         break;
@@ -257,11 +259,18 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
 
 bool CX3parser::parse_rtcp(unsigned char *data, int rtcp_len)
 {
-   if (m_benableCompare == true)                                                                                                                     
-   {
+    //the first bits of RTCP and RTP are the same, so here we just use the struct for RTP
+    RTP_HDR *pHdr = (RTP_HDR *)data;
+    if (pHdr->v != 2)
+    {
+        LOG(ERROR,"this is invalid RTP pkg");
+        return false;
+    }
+    if (m_benableCompare == true)                                                                                                                     
+    {
         return COMPARE_RTCP(m_xmlrear,m_payloadlen,m_calldirection);                                                                           
-   }
-   return true;  
+    }
+    return true;  
 }
  
 bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
@@ -276,8 +285,10 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     LOG(DEBUG,"rtp sequence is %d, payload type is %d, SSRC is 0x%X, rtp len %d",rtp_seq,pHdr->pt,ntohl(pHdr->ssrc),rtp_len);
 
     bool ret = SetAndVerifyValue(m_cur_iter->payload_type,-1,pHdr->pt);
-    if (ret == false)
+    bool b_EndofDTMF = false;
+    if (ret == false && IsValidDTMF(data+sizeof(RTP_HDR), rtp_len-sizeof(RTP_HDR),b_EndofDTMF) == false)
     {
+        LOG(ERROR,"payload_type changed and this is not DTMF pkg");
         return false;
     }
 
@@ -288,6 +299,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         bool ret = SetAndVerifyValue(m_cur_iter->ssrc_from_target,0,ntohl(pHdr->ssrc));
         if (ret == false)
         {
+	    LOG(ERROR,"from_target ssrc changed");   
             return false;
         }
         m_cur_iter->from_target_seqset.set(rtp_seq);
@@ -299,6 +311,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         bool ret = SetAndVerifyValue(m_cur_iter->ssrc_to_target,0,ntohl(pHdr->ssrc));
         if (ret == false)
         {
+	    LOG(ERROR,"to_target ssrc changed");      
             return false;
         }
         m_cur_iter->to_target_seqset.set(rtp_seq);
@@ -308,9 +321,16 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     }
     if (m_benableCompare == true)
     {
-        return COMPARE_RTP(m_xmlrear,m_payloadlen,rtp_seq,m_calldirection);
+	if(b_EndofDTMF == true)
+	{
+	    LOG(WARNING,"This is the DTMF pkg with E set to 1, for now, we'll ignore and not compare with the original pkg from pcap file");   
+	}
+	else
+	{
+            return COMPARE_RTP(m_xmlrear,m_payloadlen,rtp_seq,m_calldirection);
+	}
     }
-    if (m_calldirection == FROMTARGET)
+    /*if (m_calldirection == FROMTARGET)
     {
         int n = sendto(sock,data,rtp_len,0,(struct sockaddr *)&peeraddr,sizeof(peeraddr));
         if (n <= 0)
@@ -318,7 +338,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
             LOG(ERROR,"sending failed, %d:%s",errno,strerror(errno));
         }
         //LOG(DEBUG,"%d bytes sent out to vlc",n);
-    }
+    }*/
 
     return true;
 }
@@ -649,35 +669,25 @@ void CX3parser::SetMinMaxSeq(int &min,int &max,unsigned short seq)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
+{
+    if(dtmf_len != sizeof(DTMF_2833))
+    {
+	LOG(ERROR,"Invalid dtmf pkg len: %d",dtmf_len);
+        return false;
+    }
+    DTMF_2833 * pDTMF = (DTMF_2833 *)dtmf;
+    if(pDTMF->event >=0 && pDTMF->event <=16)
+    {
+	LOG(DEBUG,"Valid dtmf pkg, event: %d",pDTMF->event);
+	pDTMF->E == 1?b_end=true:b_end=false;
+	return true;
+    }
+    else
+    {
+	LOG(ERROR,"Invalid dtmf pkg, event: %d",pDTMF->event);
+	return false;
+    }
+}
 
 

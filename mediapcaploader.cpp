@@ -76,14 +76,21 @@ void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
 {
     u_short seq = ntohs(*((u_short*)(data+20+8+2)));
     //printf("rtp sequence is %d\n",seq); 
-    rtp_table[seq].pIP = new u_char[len];
     if(NULL == rtp_table[seq].pIP)
     {
-        printf("failed to allocate memory for rtp");
+        rtp_table[seq].pIP = new u_char[len];
+        if(NULL == rtp_table[seq].pIP)
+        {
+            printf("failed to allocate memory for rtp");
+        }
+        memcpy(rtp_table[seq].pIP,data,len);
+        rtp_table[seq].len = len;
+        m_rtp_num_frompcap++;   
     }
-    memcpy(rtp_table[seq].pIP,data,len);
-    rtp_table[seq].len = len;
-    m_rtp_num_frompcap++;   
+    else
+    {
+	printf("WARNING: the seq %d has be loaded-----due to duplicated rtp or dtmp end package!!\n");
+    }
 }
 
 bool CMediaPcapLoader::CompareRtpwithX3(const u_char* x3_payload, unsigned int len, u_short seq,int direction)
