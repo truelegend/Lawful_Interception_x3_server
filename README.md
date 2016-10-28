@@ -1,0 +1,1 @@
+Design and implement one simulated Lawful Interception X3 server for UAG LI testing. This server can be used to decode and analysis received X3 message on both TCP and UDP. IPv4/IPv6/UDP/RTP/RTCP/DTMF info can be obtained from x3 package and verified.
