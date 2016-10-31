@@ -24,27 +24,27 @@ struct IP_MEDIA_INFO
     {
         from = false;
 	to = false;
-	pIP = NULL;
+	pApp = NULL;
 	len = 0;
     }
     IP_MEDIA_INFO(const IP_MEDIA_INFO & d)
     {
         from = d.from;
 	to = d.to;
-	pIP = new u_char[d.len];
-	memcpy(pIP,d.pIP,d.len);
+	pApp = new u_char[d.len];
+	memcpy(pApp,d.pApp,d.len);
 	len = d.len;
     }
    ~IP_MEDIA_INFO()
     {
 	//if(pIP)
 	{
-	    delete[] pIP;
+	    delete[] pApp;
 	}
     }
     bool from;
     bool to;
-    u_char * pIP;
+    u_char * pApp;
     unsigned int len;
 };
 class CMediaPcapLoader

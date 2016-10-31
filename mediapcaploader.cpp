@@ -47,17 +47,17 @@ void CMediaPcapLoader::dispatcher_handler(u_char *temp1, const struct pcap_pkthd
 	return;
     }
     u_short port = ntohs(*(u_short*) (pkt_data+14+20));
-    const u_char *ip_data = pkt_data + 14;
-    int len = header->len - 14;
+    const u_char *rtp_data = pkt_data + 14 + 20 +8;
+    int len = header->len - (14 + 20 +8);
     if(port%2 == 0)
     {
 	//printf("this is rtp\n");
-	pLoader->BuildRtpTable(ip_data,len);
+	pLoader->BuildRtpTable(rtp_data,len);
     }
     else
     {
 	//printf("this is rtcp\n");
-	pLoader->BuildRtcpQueue(ip_data,len);
+	pLoader->BuildRtcpQueue(rtp_data,len);
 
     }
 }
@@ -65,25 +65,31 @@ void CMediaPcapLoader::dispatcher_handler(u_char *temp1, const struct pcap_pkthd
 void CMediaPcapLoader::BuildRtcpQueue(const u_char *data,int len)
 {
     IP_MEDIA_INFO rtcp_info;
-    rtcp_info.pIP = new u_char[len];
+    rtcp_info.pApp = new u_char[len];
+    if(NULL == rtcp_info.pApp)
+    {
+        printf("failed to allocate memory for rtcp"); 
+	exit(1);
+    }
     rtcp_info.len = len;
-    memcpy(rtcp_info.pIP,data,len);
+    memcpy(rtcp_info.pApp,data,len);
     rtcp_queue.push(rtcp_info);   
     m_rtcp_num_frompcap++;
 }
 
 void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
 {
-    u_short seq = ntohs(*((u_short*)(data+20+8+2)));
+    u_short seq = ntohs(*((u_short*)(data+2)));
     //printf("rtp sequence is %d\n",seq); 
-    if(NULL == rtp_table[seq].pIP)
+    if(NULL == rtp_table[seq].pApp)
     {
-        rtp_table[seq].pIP = new u_char[len];
-        if(NULL == rtp_table[seq].pIP)
+        rtp_table[seq].pApp = new u_char[len];
+        if(NULL == rtp_table[seq].pApp)
         {
             printf("failed to allocate memory for rtp");
+	    exit(1);
         }
-        memcpy(rtp_table[seq].pIP,data,len);
+        memcpy(rtp_table[seq].pApp,data,len);
         rtp_table[seq].len = len;
         m_rtp_num_frompcap++;   
     }
@@ -96,7 +102,7 @@ void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
 bool CMediaPcapLoader::CompareRtpwithX3(const u_char* x3_payload, unsigned int len, u_short seq,int direction)
 {
     assert(x3_payload != NULL && len != 0);
-    if(rtp_table[seq].len != len || memcmp(x3_payload,rtp_table[seq].pIP,len) != 0)
+    if(rtp_table[seq].len != len || memcmp(x3_payload,rtp_table[seq].pApp,len) != 0)
     {
 	LOG(ERROR,"rtp compareing failed, the x3 payload len of sequence %d is %d:%d",seq,rtp_table[seq].len,len);
 	return false; 
@@ -116,12 +122,12 @@ bool CMediaPcapLoader::CompareRtcpwithX3(const u_char* x3_payload, unsigned int 
          return false;
     }
     IP_MEDIA_INFO & rtcp_info = rtcp_queue.front();
-    assert(rtcp_info.pIP != NULL);
-    if(rtcp_info.len != len || memcmp(x3_payload,rtcp_info.pIP,len) != 0)
+    assert(rtcp_info.pApp != NULL);
+    if(rtcp_info.len != len || memcmp(x3_payload,rtcp_info.pApp,len) != 0)
     {
         LOG(ERROR,"rtcp compareing failed, the x3 payload len is %d:%d",rtcp_info.len,len);
 	for(int i=0;i<len;i++)
-		printf("%02x",rtcp_info.pIP[i]);
+		printf("%02x",rtcp_info.pApp[i]);
 	rtcp_queue.pop();
 	return false;
     }

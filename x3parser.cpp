@@ -268,7 +268,7 @@ bool CX3parser::parse_rtcp(unsigned char *data, int rtcp_len)
     }
     if (m_benableCompare == true)                                                                                                                     
     {
-        return COMPARE_RTCP(m_xmlrear,m_payloadlen,m_calldirection);                                                                           
+        return COMPARE_RTCP(data,rtcp_len,m_calldirection);                                                                           
     }
     return true;  
 }
@@ -327,7 +327,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 	}
 	else
 	{
-            return COMPARE_RTP(m_xmlrear,m_payloadlen,rtp_seq,m_calldirection);
+            return COMPARE_RTP(data,rtp_len,rtp_seq,m_calldirection);
 	}
     }
     /*if (m_calldirection == FROMTARGET)
