@@ -1,6 +1,7 @@
 #include "mediapcaploader.h"
 using namespace std;
 CMediaPcapLoader* CMediaPcapLoader::instance = NULL;
+CMediaPcapLoader::CGarbo CMediaPcapLoader::m_garbo;
 CMediaPcapLoader::CMediaPcapLoader()
 {
     m_fp = NULL;

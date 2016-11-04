@@ -69,6 +69,19 @@ private:
     void BuildRtcpQueue(const u_char *data,int len);
     u_int m_rtp_num_frompcap;
     u_int m_rtcp_num_frompcap;
+    class CGarbo
+    {
+    public:
+        ~CGarbo()
+	{
+	    if(CMediaPcapLoader::instance)
+	    {
+	        delete CMediaPcapLoader::instance;
+		CMediaPcapLoader::instance = NULL;
+	    }
+	}
+    };
+    static CGarbo m_garbo;
 };
 
 #endif
