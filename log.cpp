@@ -1,5 +1,6 @@
 #include "log.h"
 CLog* CLog::instance = NULL;
+CLog::CGarbo CLog::m_garbo;
 CLog::CLog(const char *logfile)
 {
     m_logfile = fopen(logfile, "w");
@@ -20,8 +21,8 @@ CLog::~CLog()
     int ret = pthread_mutex_destroy(&mutex_x);
     if (ret != 0)
         printf("error happend when try to deinitialize mutex\n");
-    if (instance)
-        delete instance;
+    //if (instance)
+    //  delete instance;
 }
 CLog* CLog::GetInstance(const char* logfile)
 {

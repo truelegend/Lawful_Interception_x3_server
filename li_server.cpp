@@ -494,6 +494,8 @@ int main(int argc, char **argv)
         LOG(ERROR,"cannot catch signal");
         exit(1);
     }
+    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread 
+    LOG(DEBUG,"Li X3 server is launching...");
     struct sockaddr_in serv_addr;
     memset(&serv_addr,0,sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
