@@ -136,11 +136,6 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     {
         return false;
     }
-    if (m_iptype == IPV4 && ip_hdr_len != sizeof(IPv4_HDR))
-    {
-        LOG(ERROR,"the decoded ipv4 hdr is not correct");
-        return false;
-    }
     if (total_len != m_payloadlen)
     {
         LOG(ERROR,"the decoded payload len %d is not equal with the decalard one %d",total_len,m_payloadlen);
@@ -194,6 +189,11 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
             return false;
         }
         ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
+	if (ip_hdr_len != sizeof(IPv4_HDR))
+	{
+	    LOG(ERROR,"the decoded ipv4 hdr is not correct");
+	    return false;    
+	}
         total_len = ntohs(pHdr->m_sTotalLenOfPacket);
         return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
     }
