@@ -201,6 +201,7 @@ private:
     char *getX3hdrrear();
     bool parse_x3body(unsigned char *body, int len);
     bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
+    bool verifyIPhdrChecksum(u_short *hdr, u_int size);
     unsigned short parse_udp_hdr(unsigned char *body);
     bool parse_rtp(unsigned char *data,int rtp_len);
     bool parse_rtcp(unsigned char *data,int rtcp_len);

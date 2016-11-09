@@ -194,7 +194,12 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
 	    LOG(ERROR,"the decoded ipv4 hdr is not correct");
 	    return false;    
 	}
-        total_len = ntohs(pHdr->m_sTotalLenOfPacket);
+	if (verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
+	{
+	    LOG(ERROR,"ip hdr checksum failed");                
+	    return false;
+	}
+ 	total_len = ntohs(pHdr->m_sTotalLenOfPacket);
         return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
     }
     case IPV6:
@@ -689,5 +694,19 @@ bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
 	return false;
     }
 }
-
+// size is in u_short unit
+bool CX3parser:: verifyIPhdrChecksum(u_short *hdr, u_int size)
+{
+    u_int cksum = 0;
+    for(int i=0;i<size;i++)
+    {
+        cksum += hdr[i];
+    }
+    cksum = (cksum>>16) + (cksum&0xffff);
+    cksum += (cksum>>16);
+    u_short us_chksum = (u_short)(~cksum);
+    bool ret;
+    us_chksum == 0?ret = true:ret = false;
+    return ret;
+}
 
