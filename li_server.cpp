@@ -64,13 +64,13 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
     int sockfd = socket(AF_INET,type,0);
     if(sockfd < 0)
     {
-        LOG(ERROR,"socket descriptor is invalid, %d:%s",errno,strerror(errno));
+        LOG(ERROR,"socket descriptor is invalid, error code: %d-%s",errno,strerror(errno));
         exit(1);
     }
     int brst = bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(struct sockaddr));
     if(brst == -1)
     {
-        LOG(ERROR,"error while binding address.");
+        LOG(ERROR,"failed to bind address, error code: %d-%s",errno,strerror(errno));
         exit(1);
     }
     int rcv_size;
