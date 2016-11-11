@@ -26,6 +26,8 @@ public:
 private:
     CLog(const char *logfile);
     ~CLog();
+    CLog(CLog const&);            // Don't Implement
+    void operator=(CLog const&); // Don't implement
     FILE* m_logfile;
     static CLog* instance;
     pthread_mutex_t mutex_x;
