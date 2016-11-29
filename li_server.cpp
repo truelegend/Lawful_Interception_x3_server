@@ -19,7 +19,7 @@ unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
 unsigned int       TIMEOUT = 60;
 unsigned int       timeout = 2;
-bool               IP_CHECKSUM = false;
+bool               gIP_CHECKSUM = false;
 bool g_benablePcapFile = false;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
@@ -116,7 +116,7 @@ void * parseCachedX3(void *x3queue)
     {
         g_pX3parserforUdp = new CX3parser();
 	g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
-	g_pX3parserforUdp->SetIPChecksum(IP_CHECKSUM);
+	g_pX3parserforUdp->SetIPChecksum(gIP_CHECKSUM);
     }
     while(1)
     {
@@ -246,7 +246,7 @@ void* tcpx3thread(void *pSocket)
     {
         g_pX3parserforTcp = new CX3parser();
 	g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
-	g_pX3parserforTcp->SetIPChecksum(IP_CHECKSUM);
+	g_pX3parserforTcp->SetIPChecksum(gIP_CHECKSUM);
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
@@ -472,7 +472,7 @@ int main(int argc, char **argv)
 		break;
 	    case 'c':
 		printf("enable IPv4 header checksum\n");
-		IP_CHECKSUM = true;
+		gIP_CHECKSUM = true;
 		break;
 	    case 'w':
                 if(CLog::GetInstance(optarg) == NULL)
