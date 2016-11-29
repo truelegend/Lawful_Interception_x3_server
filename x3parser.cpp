@@ -33,6 +33,7 @@ CX3parser::CX3parser()
     peeraddr.sin_addr.s_addr = inet_addr("10.2.1.75");
 
     m_benableCompare = false;
+    m_ipchecksum = false;
 }
 
 CX3parser::~CX3parser()
@@ -194,7 +195,7 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
 	    LOG(ERROR,"the decoded ipv4 hdr is not correct");
 	    return false;    
 	}
-	if (verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
+	if (m_ipchecksum == true && verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
 	{
 	    LOG(ERROR,"ip hdr checksum failed");                
 	    return false;

@@ -19,6 +19,7 @@ unsigned int g_udp_recv_num = 0;
 unsigned int g_tcp_recv_num = 0;
 unsigned int       TIMEOUT = 60;
 unsigned int       timeout = 2;
+bool               IP_CHECKSUM = false;
 bool g_benablePcapFile = false;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
@@ -115,6 +116,7 @@ void * parseCachedX3(void *x3queue)
     {
         g_pX3parserforUdp = new CX3parser();
 	g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
+	g_pX3parserforUdp->SetIPChecksum(IP_CHECKSUM);
     }
     while(1)
     {
@@ -244,6 +246,7 @@ void* tcpx3thread(void *pSocket)
     {
         g_pX3parserforTcp = new CX3parser();
 	g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
+	g_pX3parserforTcp->SetIPChecksum(IP_CHECKSUM);
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
@@ -391,11 +394,12 @@ void Usage(char **argv)
 	   "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
 	   "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
 	   "    -f : specify the original pcap file to be compared with received x3\n\n"
+	   "    -c : enable the IPv4 hdr checksum\n\n"
 	   );
 
     printf("Example:\n\n    ./li_server -l 10.2.22.150:20000\n\n"
 	   "    or\n\n"
-	   "    ./li_server -l 10.2.22.150:20000 -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
+	   "    ./li_server -l 10.2.22.150:20000 -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
 	   );
 }
 
@@ -439,7 +443,7 @@ int main(int argc, char **argv)
     char str_ip[20];
     char str_port[10];
     bool b_getAddr = false;
-    const char *argus = "l:f:t:T:w:h";
+    const char *argus = "l:f:t:T:w:hc";
     int opt;
     while ((opt = getopt(argc, argv, argus)) != -1)
     {
@@ -465,6 +469,10 @@ int main(int argc, char **argv)
 		break;
 	    case 't':
 		timeout = atoi(optarg);
+		break;
+	    case 'c':
+		printf("enable IPv4 header checksum\n");
+		IP_CHECKSUM = true;
 		break;
 	    case 'w':
                 if(CLog::GetInstance(optarg) == NULL)

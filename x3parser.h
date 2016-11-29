@@ -140,6 +140,7 @@ public:
         return (m_iptype==IPV4)?true:false;
     }
     void SetEnableCompare(bool b){m_benableCompare = b;}
+    void SetIPChecksum(bool b){m_ipchecksum = b;}
     unsigned int x3_num;
     unsigned int from_target_num;
     unsigned int to_target_num;
@@ -195,6 +196,7 @@ private:
     char m_format_x3[4096];
     unsigned char *m_xmlrear;
     std::vector<PORT_PARI_INFO>::iterator m_cur_iter;
+    bool m_ipchecksum;
 
     bool getElementValue(const char* str, char* value);
     bool verifyX3hdrformat();
