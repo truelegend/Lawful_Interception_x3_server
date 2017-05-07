@@ -450,7 +450,7 @@ int main(int argc, char **argv)
     char str_ip[20];
     char str_port[10];
     bool b_getAddr = false;
-    const char *argus = "l:f:t:T:w:hc";
+    const char *argus = "l:f:t:T:w:hcd";
     int opt;
     while ((opt = getopt(argc, argv, argus)) != -1)
     {
@@ -460,7 +460,7 @@ int main(int argc, char **argv)
 	        g_benablePcapFile = true;
 		if(LOAD_PCAP(optarg) == false)
 		{
-		    printf("failed to load pcap file, exit");
+		    printf("failed to load pcap file, exit\n");
 		    exit(1);
 		}
 		break;
