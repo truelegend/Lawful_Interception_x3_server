@@ -141,6 +141,7 @@ public:
     }
     void SetEnableCompare(bool b){m_benableCompare = b;}
     void SetIPChecksum(bool b){m_ipchecksum = b;}
+    void SetIfDumpX3(bool b){m_dumpX3 = b;}
     unsigned int x3_num;
     unsigned int from_target_num;
     unsigned int to_target_num;
@@ -194,6 +195,8 @@ private:
     int m_iptype;
 
     char m_format_x3[4096];
+    bool m_dumpX3;
+
     unsigned char *m_xmlrear;
     std::vector<PORT_PARI_INFO>::iterator m_cur_iter;
     bool m_ipchecksum;

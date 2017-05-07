@@ -6,3 +6,4 @@ li_server
 *.gch
 test.cpp
 val
+.*

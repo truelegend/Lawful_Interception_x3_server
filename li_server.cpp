@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -21,6 +19,7 @@ unsigned int       TIMEOUT = 60;
 unsigned int       timeout = 2;
 bool               gIP_CHECKSUM = false;
 bool g_benablePcapFile = false;
+bool g_bdumpX3         = false;
 int parsethread_exit      = 0;
 pthread_t g_udpx3thNo, g_tcpx3thNo;
 pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -117,6 +116,7 @@ void * parseCachedX3(void *x3queue)
         g_pX3parserforUdp = new CX3parser();
 	g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
 	g_pX3parserforUdp->SetIPChecksum(gIP_CHECKSUM);
+	g_pX3parserforUdp->SetIfDumpX3(g_bdumpX3);
     }
     while(1)
     {
@@ -247,6 +247,7 @@ void* tcpx3thread(void *pSocket)
         g_pX3parserforTcp = new CX3parser();
 	g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
 	g_pX3parserforTcp->SetIPChecksum(gIP_CHECKSUM);
+	g_pX3parserforTcp->SetIfDumpX3(g_bdumpX3);
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
@@ -395,11 +396,12 @@ void Usage(char **argv)
 	   "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
 	   "    -f : specify the original pcap file to be compared with received x3\n\n"
 	   "    -c : enable the IPv4 hdr checksum\n\n"
+	   "    -d : dump the x3 msg body\n\n"
 	   );
 
-    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000\n\n"
+    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000 -d\n\n"
 	   "    or\n\n"
-	   "    ./li_server -l 10.2.22.150:20000 -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
+	   "    ./li_server -l 10.2.22.150:20000 -d -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
 	   );
 }
 
@@ -456,6 +458,10 @@ int main(int argc, char **argv)
 		    printf("failed to load pcap file, exit");
 		    exit(1);
 		}
+		break;
+	    case 'd':
+	        printf("will dump the x3 message\n");
+	        g_bdumpX3 = true;
 		break;
 	    case 'l':
 		if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)

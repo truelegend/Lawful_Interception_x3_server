@@ -63,8 +63,11 @@ bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
     x3_num++;
 
     bool ret = parse_x3body(m_x3+m_x3_len-m_payloadlen,m_payloadlen);
-    formatX3();
-    LOG(DEBUG,"dump the received x3 data:\n%s\n", m_format_x3);
+    if(m_dumpX3 == true)
+    {
+        formatX3();
+        LOG(DEBUG,"dump the received x3 data:\n%s\n", m_format_x3);
+    }
     return ret;
 }
 bool CX3parser::getElementValue(const char* str, char* value)
@@ -699,7 +702,7 @@ bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
 bool CX3parser:: verifyIPhdrChecksum(u_short *hdr, u_int size)
 {
     u_int cksum = 0;
-    for(int i=0;i<size;i++)
+    for(unsigned int i=0;i<size;i++)
     {
         cksum += hdr[i];
     }
