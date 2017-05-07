@@ -361,6 +361,11 @@ void OutputStatics(CX3parser *pX3parser)
         pX3parser->to_target_num, pX3parser->to_rtp_num, pX3parser->to_rtcp_num, pX3parser->to_msrp_num);
     //LOG(DEBUG,"target ip: %s",pX3parser->target_ip);
     //LOG(DEBUG,"uag    ip: %s",pX3parser->uag_ip);
+    LOG(DEBUG,"the total number of Correlation-id is %d",pX3parser->m_mapCorId.size());
+    for(map<string,unsigned int>::iterator iter = pX3parser->m_mapCorId.begin();iter != pX3parser->m_mapCorId.end();++iter)
+    {
+	LOG(DEBUG,"Correlation-id:%s, number:%d",iter->first.c_str(),iter->second);
+    }
     for(vector<PORT_PARI_INFO>::iterator iter = pX3parser->vecPort_pair_info.begin(); iter != pX3parser->vecPort_pair_info.end(); ++iter)
     {
         if(iter->target_port%2 == 0)

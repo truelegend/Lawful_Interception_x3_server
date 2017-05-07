@@ -403,6 +403,18 @@ bool CX3parser::verifyX3hdrformat()
         LOG(ERROR,"failed to get Correlation-id tag value");
         return false;
     }
+    else
+    {
+	string value(tmp);
+        if(m_mapCorId.find(value) == m_mapCorId.end())
+	{
+	    m_mapCorId[value] = 1;
+	}
+	else
+	{
+	    m_mapCorId[value]++;	
+	}
+    }
     // <PayloadType>RTP</PayloadType>
     if (getElementValue("PayloadType",tmp))
     {

@@ -16,6 +16,7 @@
 #include <exception>
 #include <stdexcept>
 #include <vector>
+#include <map>
 #include <bitset>
 #include "log.h"
 #include "mediapcaploader.h"
@@ -157,6 +158,7 @@ public:
     char *target_ip;
     char *uag_ip;
     std::vector<PORT_PARI_INFO> vecPort_pair_info;
+    std::map<std::string,unsigned int> m_mapCorId;
 
 private:
     enum PayloadType
