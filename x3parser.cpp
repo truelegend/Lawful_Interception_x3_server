@@ -32,7 +32,8 @@ CX3parser::CX3parser()
     peeraddr.sin_port = htons(40000);
     peeraddr.sin_addr.s_addr = inet_addr("10.2.1.75");
 
-    m_benableCompare = false;
+    m_dumpX3 = false;
+
     m_ipchecksum = false;
 }
 
