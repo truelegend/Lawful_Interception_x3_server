@@ -23,4 +23,4 @@ log.o: log.h log.cpp
 
 .PHONY: clean
 clean:
-	rm -f *.o li_server
+	rm -f *.o li_server *.gch
