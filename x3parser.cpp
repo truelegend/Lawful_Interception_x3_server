@@ -292,8 +292,10 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         return false;
     }
     unsigned short rtp_seq = ntohs(pHdr->seq);
-    LOG(DEBUG,"rtp sequence is %d, payload type is %d, SSRC is 0x%X, rtp len %d",rtp_seq,pHdr->pt,ntohl(pHdr->ssrc),rtp_len);
-
+    if(m_dumpX3 == true)
+    {
+        LOG(DEBUG,"rtp sequence is %d, payload type is %d, SSRC is 0x%X, rtp len %d",rtp_seq,pHdr->pt,ntohl(pHdr->ssrc),rtp_len);
+    }
     bool ret = SetAndVerifyValue(m_cur_iter->payload_type,-1,pHdr->pt);
     bool b_EndofDTMF = false;
     if (ret == false && IsValidDTMF(data+sizeof(RTP_HDR), rtp_len-sizeof(RTP_HDR),b_EndofDTMF) == false)
