@@ -55,6 +55,24 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,int lev
     pthread_mutex_unlock(&mutex_x);
 }
 
+void CLog::WriteRawLog(const char* format,...)
+{
+    pthread_mutex_lock(&mutex_x);
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+    char str[20480] = {0};
+    va_list args;
+    va_start(args, format);
+    vsprintf(str, format, args);
+    va_end(args);
+    printf("%s\n",str);
+    fprintf(m_logfile, "%s\n",str);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_mutex_unlock(&mutex_x);
+}
+
+
+
+
 
 
 

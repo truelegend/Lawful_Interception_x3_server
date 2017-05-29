@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #define LOG(level,format,...) CLog::GetInstance()->WriteLog(__FUNCTION__,__FILE__, __LINE__, level,format,##__VA_ARGS__)
+#define LOG_RAW(format,...) CLog::GetInstance()->WriteRawLog(format,##__VA_ARGS__)
 
 enum LOG_LEVEL
 {
@@ -23,6 +24,7 @@ class CLog
 public:
     static CLog* GetInstance(const char* logfile = "/tmp/li.log");
     void WriteLog(const char* func, const char* codeFile, long codeLine,int level, const char* format,...);
+    void WriteRawLog(const char* format,...);
 private:
     CLog(const char *logfile);
     ~CLog();

@@ -535,4 +535,16 @@ int main(int argc, char **argv)
     delete g_pX3parserforTcp;
     delete g_pX3parserforUdp;
     LOG(DEBUG,"=============================================================================================================================");
+    const char *thumb = "\n\
+             /(|         \n\
+            (  :         \n\
+            _\\  \\  _____ \n\
+         (____)  `|      \n\
+         (____)|  |      \n\
+         (____).__|      \n\
+          (___)__.|_____";
+    printf("%s",thumb);
+    LOG_RAW("%s",thumb);
+   
+
 }
