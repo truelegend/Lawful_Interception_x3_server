@@ -20,7 +20,8 @@
 #include <bitset>
 #include "log.h"
 #include "mediapcaploader.h"
-#define IP_STRING_NUM 256
+#include "x3statistics.h"
+
 struct IPv4_HDR
 {
     uint8_t    m_cVersionAndHeaderLen;
@@ -80,7 +81,7 @@ struct DTMF_2833
     uint16_t duration;
 };
 
-struct PORT_PARI_INFO
+/*struct PORT_PARI_INFO
 {
     PORT_PARI_INFO(unsigned short t_port,unsigned short u_port,unsigned int from_num,unsigned int to_num)
     {
@@ -129,7 +130,7 @@ struct PORT_PARI_INFO
     int            to_target_minseq;
     int            to_target_maxseq;
 };
-
+*/
 
 class CX3parser
 {
@@ -137,54 +138,16 @@ public:
     CX3parser();
     ~CX3parser();
     bool parse_x3(unsigned char *x3, int x3_len);
-    bool isIpv4type() {
-        return (m_iptype==IPV4)?true:false;
-    }
+
     void SetEnableCompare(bool b){m_benableCompare = b;}
     void SetIPChecksum(bool b){m_ipchecksum = b;}
     void SetIfDumpX3(bool b){m_dumpX3 = b;}
     unsigned int x3_num;
-    unsigned int from_target_num;
-    unsigned int to_target_num;
 
-    unsigned int from_rtp_num;
-    unsigned int from_rtcp_num;
-    unsigned int from_msrp_num;
-
-    unsigned int to_rtp_num;
-    unsigned int to_rtcp_num;
-    unsigned int to_msrp_num;
-
-    char *target_ip;
-    char *uag_ip;
-    std::vector<PORT_PARI_INFO> vecPort_pair_info;
-    std::map<std::string,unsigned int> m_mapCorId;
+    CX3Statistics m_x3statistics;
 
 private:
-    enum PayloadType
-    {
-        RTP =    0,
-        MSRP =   1,
-        NOTYPE = 2
-    };
-    enum CallDirection
-    {
-        TOTARGET   =  0,
-        FROMTARGET =  1,
-        NODIRECTION =  2
-    };
-    enum RTPTYPE
-    {
-        REAL_RTP  = 0,
-        REAL_RTCP = 1,
-        REAL_NO   = 2
-    };
-    enum IPTYPE
-    {
-        IPV4 = 4,
-        IPV6 = 6,
-        NOIP = 2
-    };
+
     int sock;
     struct sockaddr_in peeraddr;
     unsigned char *m_x3;
@@ -200,7 +163,7 @@ private:
     bool m_dumpX3;
 
     unsigned char *m_xmlrear;
-    std::vector<PORT_PARI_INFO>::iterator m_cur_iter;
+
     bool m_ipchecksum;
 
     bool getElementValue(const char* str, char* value);
@@ -213,30 +176,16 @@ private:
     bool parse_rtp(unsigned char *data,int rtp_len);
     bool parse_rtcp(unsigned char *data,int rtcp_len);
     bool parse_msrp(unsigned char *data);
-    bool getIPaddrAndVerify(void *src, void *dst, int af);
+
     bool IsValidDTMF(u_char *dtmf, int dtmf_len,bool & b_end);
     void formatX3();
     char* formatX3xml();
     void formatX3payload(unsigned char *data);
-    //bool setAndVerifyIPtype(int iptype);
+
     void initializeArguments();
     bool setPortPairInfo(unsigned short src_port, unsigned short dst_port);
-    std::vector<PORT_PARI_INFO>::iterator findExistedPortPair(unsigned short target_port,unsigned short uag_port);
-
-    template<typename T1, typename T2,typename T3>
-    bool SetAndVerifyValue(T1& argu,const T2 iniValue, const T3 newValue)
-    {
-        if (argu == iniValue)
-        {
-            argu = newValue;
-        }
-        else if (argu != newValue)
-        {
-            LOG(DEBUG,"maybe something is wrong, the previous is 0x%x, the current is 0x%x, need to check further",argu, newValue);
-            return false;
-        }
-        return true;
-    }
+    
+  
     void SetMinMaxSeq(int &min,int &max,unsigned short seq);
     bool m_benableCompare;
 };

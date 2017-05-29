@@ -355,36 +355,8 @@ void* tcpx3thread(void *pSocket)
 
 void OutputStatics(CX3parser *pX3parser)
 {
-    LOG(DEBUG,"total x3 pkg num: %d, from_target num: %d(rtp %d + rtcp %d + msrp %d) + to_target num: %d (rtp %d + rtcp %d + msrp %d)",
-        pX3parser->x3_num,
-        pX3parser->from_target_num, pX3parser->from_rtp_num, pX3parser->from_rtcp_num, pX3parser->from_msrp_num,
-        pX3parser->to_target_num, pX3parser->to_rtp_num, pX3parser->to_rtcp_num, pX3parser->to_msrp_num);
-    //LOG(DEBUG,"target ip: %s",pX3parser->target_ip);
-    //LOG(DEBUG,"uag    ip: %s",pX3parser->uag_ip);
-    LOG(DEBUG,"the total number of Correlation-id is %d",pX3parser->m_mapCorId.size());
-    for(map<string,unsigned int>::iterator iter = pX3parser->m_mapCorId.begin();iter != pX3parser->m_mapCorId.end();++iter)
-    {
-	LOG(DEBUG,"Correlation-id:%s, number:%d",iter->first.c_str(),iter->second);
-    }
-    for(vector<PORT_PARI_INFO>::iterator iter = pX3parser->vecPort_pair_info.begin(); iter != pX3parser->vecPort_pair_info.end(); ++iter)
-    {
-        if(iter->target_port%2 == 0)
-        {
-            LOG(DEBUG,"RTP info:");
-            float from_target_loss_rate = iter->GetFromRtpLossRate();
-            float to_target_loss_rate = iter->GetToRtpLossRate();
-            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, from_target_loss_rate: %.3f%, to_target_loss_rate: %.3f%",
-                pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num,
-                iter->payload_type,iter->ssrc_from_target,iter->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);
-        }
-        else
-        {
-            LOG(DEBUG,"RTCP info:");
-            LOG(DEBUG,"target %s:%d, uag %s:%d, from_target_num: %d, to_target_num: %d",
-                pX3parser->target_ip,iter->target_port,pX3parser->uag_ip,iter->uag_port,iter->from_target_num,iter->to_target_num);
-
-        }
-    }
+    pX3parser->m_x3statistics.OutputStatics();
+    
     if(g_benablePcapFile == true)
     {
         LOG(DEBUG,"######since the original pcap file is supplied, output the statics:######");
@@ -548,12 +520,12 @@ int main(int argc, char **argv)
     LOG(DEBUG,"=============================================================================================================================");
     if (g_tcp_recv_num)
     {
-        LOG(DEBUG,"x3 is over TCP, recv function returns %d times", g_tcp_recv_num);
+        LOG(DEBUG,"x3 is over TCP");//, recv function returns %d times", g_tcp_recv_num);
         OutputStatics(g_pX3parserforTcp);
     }
     if (g_udp_recv_num)
     {
-        LOG(DEBUG,"x3 is over UDP, recv function returns %d times", g_udp_recv_num);
+        LOG(DEBUG,"x3 is over UDP");//, recv function returns %d times", g_udp_recv_num);
         OutputStatics(g_pX3parserforUdp);
     }
     if (g_udp_recv_num == 0 && g_tcp_recv_num == 0)
