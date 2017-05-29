@@ -362,6 +362,15 @@ void OutputStatics(CX3parser *pX3parser)
         LOG(DEBUG,"######since the original pcap file is supplied, output the statics:######");
 	CMediaPcapLoader::GetInstance()->OutputStaticsFromPcap();
     }
+    const char *thumb = "\n\
+             /(|         \n\
+            (  :         \n\
+            _\\  \\  _____ \n\
+         (____)  `|      \n\
+         (____)|  |      \n\
+         (____).__|      \n\
+          (___)__.|_____";
+    LOG_RAW("%s",thumb);
 }
 
 void Usage(char **argv)
@@ -535,16 +544,6 @@ int main(int argc, char **argv)
     delete g_pX3parserforTcp;
     delete g_pX3parserforUdp;
     LOG(DEBUG,"=============================================================================================================================");
-    const char *thumb = "\n\
-             /(|         \n\
-            (  :         \n\
-            _\\  \\  _____ \n\
-         (____)  `|      \n\
-         (____)|  |      \n\
-         (____).__|      \n\
-          (___)__.|_____";
-    printf("%s",thumb);
-    LOG_RAW("%s",thumb);
    
 
 }
