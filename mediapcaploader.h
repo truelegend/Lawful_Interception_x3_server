@@ -23,24 +23,24 @@ struct IP_MEDIA_INFO
     IP_MEDIA_INFO()
     {
         from = false;
-	to = false;
-	pApp = NULL;
-	len = 0;
+        to = false;
+        pApp = NULL;
+        len = 0;
     }
     IP_MEDIA_INFO(const IP_MEDIA_INFO & d)
     {
         from = d.from;
-	to = d.to;
-	pApp = new u_char[d.len];
-	memcpy(pApp,d.pApp,d.len);
-	len = d.len;
+        to = d.to;
+        pApp = new u_char[d.len];
+        memcpy(pApp,d.pApp,d.len);
+        len = d.len;
     }
-   ~IP_MEDIA_INFO()
+    ~IP_MEDIA_INFO()
     {
-	//if(pIP)
-	{
-	    delete[] pApp;
-	}
+        //if(pIP)
+        {
+            delete[] pApp;
+        }
     }
     bool from;
     bool to;
@@ -73,13 +73,13 @@ private:
     {
     public:
         ~CGarbo()
-	{
-	    if(CMediaPcapLoader::instance)
-	    {
-	        delete CMediaPcapLoader::instance;
-		CMediaPcapLoader::instance = NULL;
-	    }
-	}
+        {
+            if(CMediaPcapLoader::instance)
+            {
+                delete CMediaPcapLoader::instance;
+                CMediaPcapLoader::instance = NULL;
+            }
+        }
     };
     static CGarbo m_garbo;
 };

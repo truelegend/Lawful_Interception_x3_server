@@ -139,9 +139,15 @@ public:
     ~CX3parser();
     bool parse_x3(unsigned char *x3, int x3_len);
 
-    void SetEnableCompare(bool b){m_benableCompare = b;}
-    void SetIPChecksum(bool b){m_ipchecksum = b;}
-    void SetIfDumpX3(bool b){m_dumpX3 = b;}
+    void SetEnableCompare(bool b) {
+        m_benableCompare = b;
+    }
+    void SetIPChecksum(bool b) {
+        m_ipchecksum = b;
+    }
+    void SetIfDumpX3(bool b) {
+        m_dumpX3 = b;
+    }
     unsigned int x3_num;
 
     CX3Statistics m_x3statistics;
@@ -184,8 +190,8 @@ private:
 
     void initializeArguments();
     bool setPortPairInfo(unsigned short src_port, unsigned short dst_port);
-    
-  
+
+
     void SetMinMaxSeq(int &min,int &max,unsigned short seq);
     bool m_benableCompare;
 };

@@ -36,4 +36,25 @@ x3_rtcp = hdr3 + ip_rtcp + udp_rtcp + rtcp
 
 client.sendto(x3_rtcp,server_addr)
 
+
+time.sleep(0.02)
+hdr4 = b'''<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?><!DOCTYPE hi3-uag SYSTEM "hi3-uag.dtd"><hi3-uag><li-tid>31</li-tid><stamp>2016-04-27 04:08:45</stamp><CallDirection>to-target</CallDirection><Correlation-id>1-12c-2-2-0386a</Correlation-id><PayloadType>RTP</PayloadType><PayloadLength>220</PayloadLength></hi3-uag>'''
+ip_v6 = binascii.a2b_hex(b"6000000000b41140200218901001220b0000000000000032200218901001220b0000000000000032")
+udp4= binascii.a2b_hex(b"1f6a1f6400b45c71")
+rtp4 = binascii.a2b_hex(b"8000000000000320156d14cfffffffffffffffff7fff7fff7fffff7ffe7efe7efe7efefe7bdfdbe1ef6a5e4e4e4f4e636366e2f97c6e585a575c5c5e68555d5e596e635f605b5a585755575c585e60555c595956585f565b5c5653585a565b595b5f54525653595c615c6568565e55525e5c635d685d5663555a5c595e5b5d595a5d585f6661625b595a5b5859605d606460635c655f5b61595b5f5d605f635c595e5e65636262615f5c5e5e")
+
+x3_rtp_ipv6 = hdr4 + ip_v6 + udp4 + rtp4
+client.sendto(x3_rtp_ipv6,server_addr)
+
+time.sleep(0.02)
+hdr_msrp = b'''<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?><!DOCTYPE hi3-uag SYSTEM "hi3-uag.dtd"><hi3-uag><li-tid>31</li-tid><stamp>2016-04-27 04:08:45</stamp><CallDirection>to-target</CallDirection><Correlation-id>2-12c-2-2-0386a</Correlation-id><PayloadType>MSRP</PayloadType><PayloadLength>6</PayloadLength></hi3-uag>'''
+#ip4 = binascii.a2b_hex(b"6000000000b41140200218901001220b0000000000000032200218901001220b0000000000000032")
+#udp4= binascii.a2b_hex(b"1f6a1f6400b45c71")
+#rtp4 = binascii.a2b_hex(b"8000000000000320156d14cfffffffffffffffff7fff7fff7fffff7ffe7efe7efe7efefe7bdfdbe1ef6a5e4e4e4f4e636366e2f97c6e585a575c5c5e68555d5e596e635f605b5a585755575c585e60555c595956585f565b5c5653585a565b595b5f54525653595c615c6568565e55525e5c635d685d5663555a5c595e5b5d595a5d585f6661625b595a5b5859605d606460635c655f5b61595b5f5d605f635c595e5e65636262615f5c5e5e")
+msrp = b"abcdef"
+x3_msrp = hdr_msrp + msrp
+client.sendto(x3_msrp,server_addr)
+
+
+
 client.close()

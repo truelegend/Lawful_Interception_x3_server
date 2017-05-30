@@ -97,7 +97,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     //LOG(DEBUG,"Got the correct beginning of x3 body");
     if(m_payloadtype == X3_MSRP)
     {
-	//(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
+        //(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
         LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
         return true;
     }
@@ -110,7 +110,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     case IPV6:
         if (m_x3statistics.VerifyIPType(m_iptype) == false)
         {
-	        LOG(ERROR,"ip type cannot change!");
+            LOG(ERROR,"ip type cannot change!");
             return false;
         }
         break;
@@ -149,7 +149,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     }
     else if(m_real_rtptype == REAL_RTCP)
     {
-	return parse_rtcp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
+        return parse_rtcp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
     }
     return false;
 }
@@ -177,17 +177,17 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
             return false;
         }
         ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
-	if (ip_hdr_len != sizeof(IPv4_HDR))
-	{
-	    LOG(ERROR,"the decoded ipv4 hdr is not correct");
-	    return false;    
-	}
-	if (m_ipchecksum == true && verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
-	{
-	    LOG(ERROR,"ip hdr checksum failed");                
-	    return false;
-	}
- 	total_len = ntohs(pHdr->m_sTotalLenOfPacket);
+        if (ip_hdr_len != sizeof(IPv4_HDR))
+        {
+            LOG(ERROR,"the decoded ipv4 hdr is not correct");
+            return false;
+        }
+        if (m_ipchecksum == true && verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
+        {
+            LOG(ERROR,"ip hdr checksum failed");
+            return false;
+        }
+        total_len = ntohs(pHdr->m_sTotalLenOfPacket);
         //return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
         return m_x3statistics.VerifyIPAddress(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
     }
@@ -219,14 +219,14 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     unsigned short dst_port = ntohs(pHdr->m_usDestPort);
     //LOG(DEBUG,"source port: %d",src_port);
     //LOG(DEBUG,"dst port: %d",dst_port);
-   
+
     if (m_payloadtype == X3_RTP)
     {
         if((src_port%2 == 0) && (dst_port%2 == 0))
         {
             m_real_rtptype = REAL_RTP;
             m_x3statistics.SetRtpPort(src_port,dst_port);
-            
+
         }
         else if((src_port%2 != 0) && (dst_port%2 != 0))
         {
@@ -257,13 +257,13 @@ bool CX3parser::parse_rtcp(unsigned char *data, int rtcp_len)
         LOG(ERROR,"this is invalid RTP pkg");
         return false;
     }
-    if (m_benableCompare == true)                                                                                                                     
+    if (m_benableCompare == true)
     {
-        return COMPARE_RTCP(data,rtcp_len,m_calldirection);                                                                           
+        return COMPARE_RTCP(data,rtcp_len,m_calldirection);
     }
-    return true;  
+    return true;
 }
- 
+
 bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 {
     RTP_HDR *pHdr = (RTP_HDR *)data;
@@ -291,20 +291,20 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     ret = m_x3statistics.SetRtpSSRC(ntohl(pHdr->ssrc));
     if (ret == false)
     {
-        LOG(ERROR,"from_target ssrc changed");   
+        LOG(ERROR,"from_target ssrc changed");
         return false;
     }
     m_x3statistics.SetRtpSeq(rtp_seq);
     if (m_benableCompare == true)
     {
-	if(b_EndofDTMF == true)
-	{
-	    LOG(WARNING,"This is the DTMF pkg with E set to 1, for now, we'll ignore and not compare with the original pkg from pcap file");   
-	}
-	else
-	{
+        if(b_EndofDTMF == true)
+        {
+            LOG(WARNING,"This is the DTMF pkg with E set to 1, for now, we'll ignore and not compare with the original pkg from pcap file");
+        }
+        else
+        {
             return COMPARE_RTP(data,rtp_len,rtp_seq,m_calldirection);
-	}
+        }
     }
     /*if (m_calldirection == FROMTARGET)
     {
@@ -370,7 +370,7 @@ bool CX3parser::verifyX3hdrformat()
     }
     else
     {
-	    corId = string(tmp);
+        corId = string(tmp);
     }
     // <PayloadType>RTP</PayloadType>
     if (getElementValue("PayloadType",tmp))
@@ -460,7 +460,7 @@ void CX3parser::formatX3payload(unsigned char *data)
     if (m_payloadtype == X3_MSRP)
     {
         memcpy(data,start,m_payloadlen);
-	*(data + m_payloadlen) = '\0';
+        *(data + m_payloadlen) = '\0';
         return;
     }
     char map[] = "0123456789abcdef";
@@ -504,27 +504,27 @@ bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
 {
     if(dtmf_len != sizeof(DTMF_2833))
     {
-	LOG(ERROR,"Invalid dtmf pkg len: %d",dtmf_len);
+        LOG(ERROR,"Invalid dtmf pkg len: %d",dtmf_len);
         return false;
     }
     DTMF_2833 * pDTMF = (DTMF_2833 *)dtmf;
     if(pDTMF->event <=16)
     {
-	LOG(DEBUG,"Valid dtmf pkg, event: %d",pDTMF->event);
-	(pDTMF->E == 1)?b_end=true:b_end=false;
-	return true;
+        LOG(DEBUG,"Valid dtmf pkg, event: %d",pDTMF->event);
+        (pDTMF->E == 1)?b_end=true:b_end=false;
+        return true;
     }
     else
     {
-	LOG(ERROR,"Invalid dtmf pkg, event: %d",pDTMF->event);
-	return false;
+        LOG(ERROR,"Invalid dtmf pkg, event: %d",pDTMF->event);
+        return false;
     }
 }
 // size is in u_short unit
 bool CX3parser:: verifyIPhdrChecksum(u_short *hdr, u_int size)
 {
     u_int cksum = 0;
-    for(unsigned int i=0;i<size;i++)
+    for(unsigned int i=0; i<size; i++)
     {
         cksum += hdr[i];
     }

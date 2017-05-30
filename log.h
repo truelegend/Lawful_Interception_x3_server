@@ -38,13 +38,13 @@ private:
     {
     public:
         ~CGarbo()
-	{
-	    if(CLog::instance)
-	    {
-	        delete CLog::instance;
-		CLog::instance = NULL;
-	    }
-	}
+        {
+            if(CLog::instance)
+            {
+                delete CLog::instance;
+                CLog::instance = NULL;
+            }
+        }
     };
     static CGarbo m_garbo;
 

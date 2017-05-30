@@ -114,9 +114,9 @@ void * parseCachedX3(void *x3queue)
     if(!g_pX3parserforUdp)
     {
         g_pX3parserforUdp = new CX3parser();
-	g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
-	g_pX3parserforUdp->SetIPChecksum(gIP_CHECKSUM);
-	g_pX3parserforUdp->SetIfDumpX3(g_bdumpX3);
+        g_pX3parserforUdp->SetEnableCompare(g_benablePcapFile);
+        g_pX3parserforUdp->SetIPChecksum(gIP_CHECKSUM);
+        g_pX3parserforUdp->SetIfDumpX3(g_bdumpX3);
     }
     while(1)
     {
@@ -124,9 +124,9 @@ void * parseCachedX3(void *x3queue)
         pthread_mutex_lock(&g_mutex);
         UDP_X3 *pX3;
         while((pX3 = pQueue->DeQueue()) == NULL && parsethread_exit == 0)
-	{
+        {
             pthread_cond_wait(&g_cond, &g_mutex);
-	}
+        }
         int len;
         u_char *data;
         if (pX3)
@@ -175,14 +175,14 @@ void* udpx3thread(void *pSocket)
         if (recv_len > 0)
         {
             g_udp_recv_num++;
-	    if(g_udp_recv_num == 1)
-	    {
-	        if(setsockopt(*p_serve_sock,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
+            if(g_udp_recv_num == 1)
+            {
+                if(setsockopt(*p_serve_sock,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
                 {
                     LOG(ERROR,"failed to set TIMEOUT for receiving socket");
                     exit(1);
                 }
-	    }
+            }
             //LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
             pthread_mutex_lock(&g_mutex);
@@ -191,7 +191,7 @@ void* udpx3thread(void *pSocket)
                 LOG(ERROR,"failed to enqueue x3 pkg, this is the %d x3 pkg",g_udp_recv_num);
                 exit(1);
             }
-	    pthread_cond_signal(&g_cond);
+            pthread_cond_signal(&g_cond);
             // unlock
             pthread_mutex_unlock(&g_mutex);
         }
@@ -204,7 +204,7 @@ void* udpx3thread(void *pSocket)
     }
     // For scenario there no pkg is reveived at at all
     parsethread_exit = 1;
-    pthread_cond_signal(&g_cond);  
+    pthread_cond_signal(&g_cond);
     if(pthread_join(parsecachedx3thread,NULL) != 0)
     {
         LOG(ERROR,"the udp thread will wait until the parsing thread exits, but seems it doesn't");
@@ -245,9 +245,9 @@ void* tcpx3thread(void *pSocket)
     if (!g_pX3parserforTcp)
     {
         g_pX3parserforTcp = new CX3parser();
-	g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
-	g_pX3parserforTcp->SetIPChecksum(gIP_CHECKSUM);
-	g_pX3parserforTcp->SetIfDumpX3(g_bdumpX3);
+        g_pX3parserforTcp->SetEnableCompare(g_benablePcapFile);
+        g_pX3parserforTcp->SetIPChecksum(gIP_CHECKSUM);
+        g_pX3parserforTcp->SetIfDumpX3(g_bdumpX3);
     }
     memset(&tmp_buffer,0,sizeof(tmp_buffer));
     memset(&x3_buffer,0,sizeof(x3_buffer));
@@ -262,15 +262,15 @@ void* tcpx3thread(void *pSocket)
         if (recv_len > 0)
         {
             g_tcp_recv_num++;
-	    if(g_tcp_recv_num == 1)
-	    {
-	        if(setsockopt(client_sockfd,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
+            if(g_tcp_recv_num == 1)
+            {
+                if(setsockopt(client_sockfd,SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) != 0)
                 {
                     LOG(ERROR,"failed to set TIMEOUT for receiving socket");
                     exit(1);
                 }
-	    }
-	    LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
+            }
+            LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
             if((p - tmp_buffer) > sizeof(tmp_buffer))
@@ -356,11 +356,11 @@ void* tcpx3thread(void *pSocket)
 void OutputStatics(CX3parser *pX3parser)
 {
     pX3parser->m_x3statistics.OutputStatics();
-    
+
     if(g_benablePcapFile == true)
     {
         LOG(DEBUG,"######since the original pcap file is supplied, output the statics:######");
-	CMediaPcapLoader::GetInstance()->OutputStaticsFromPcap();
+        CMediaPcapLoader::GetInstance()->OutputStaticsFromPcap();
     }
     const char *thumb = "\n\
              /(|         \n\
@@ -370,25 +370,25 @@ void OutputStatics(CX3parser *pX3parser)
          (____)|  |      \n\
          (____).__|      \n\
           (___)__.|_____";
-    LOG_RAW("%s",thumb);
+    LOG_RAW("%s\n",thumb);
 }
 
 void Usage(char **argv)
 {
     printf("usage:\n\n%s -l local_ip:local_port [optional options]\n\n", argv[0]);
     printf("    -l : mandatory arguments, specify the local ip and port for listening x3, separated by ':'\n\n"
-	   "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
-	   "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
-	   "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
-	   "    -f : specify the original pcap file to be compared with received x3\n\n"
-	   "    -c : enable the IPv4 hdr checksum\n\n"
-	   "    -d : dump the x3 msg body\n\n"
-	   );
+           "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
+           "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
+           "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
+           "    -f : specify the original pcap file to be compared with received x3\n\n"
+           "    -c : enable the IPv4 hdr checksum\n\n"
+           "    -d : dump the x3 msg body\n\n"
+          );
 
     printf("Example:\n\n    ./li_server -l 10.2.22.150:20000 -d\n\n"
-	   "    or\n\n"
-	   "    ./li_server -l 10.2.22.150:20000 -d -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
-	   );
+           "    or\n\n"
+           "    ./li_server -l 10.2.22.150:20000 -d -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
+          );
 }
 
 void sigint_handler(int sig)
@@ -416,7 +416,7 @@ bool parseIPPort(const char *optarg, char *str_ip, char *str_port)
     if(NULL == pc || pc == optarg)
     {
         printf("missing ':' between ip and port");
-	return false;
+        return false;
     }
     assert(*(pc+1) != '\0');
 
@@ -435,58 +435,58 @@ int main(int argc, char **argv)
     int opt;
     while ((opt = getopt(argc, argv, argus)) != -1)
     {
-	switch(opt)
-	{
-            case 'f':
-	        g_benablePcapFile = true;
-		if(LOAD_PCAP(optarg) == false)
-		{
-		    printf("failed to load pcap file, exit\n");
-		    exit(1);
-		}
-		break;
-	    case 'd':
-	        printf("will dump the x3 message\n");
-	        g_bdumpX3 = true;
-		break;
-	    case 'l':
-		if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
-		{
-		    Usage(argv);
-	            exit(1);	    
-		}
-		break;
-	    case 'T':
-		TIMEOUT = atoi(optarg);
-		break;
-	    case 't':
-		timeout = atoi(optarg);
-		break;
-	    case 'c':
-		printf("enable IPv4 header checksum\n");
-		gIP_CHECKSUM = true;
-		break;
-	    case 'w':
-                if(CLog::GetInstance(optarg) == NULL)
-		{
-		    printf("failed to get the instance of log class, exit\n");
-		    exit(1); 
-		}
-		break;
-	    case 'h':
-	    case ':':
-	    case '?':
-		Usage(argv);
-		exit(1);
-		break;
-	    default:
-		break;
-	}
+        switch(opt)
+        {
+        case 'f':
+            g_benablePcapFile = true;
+            if(LOAD_PCAP(optarg) == false)
+            {
+                printf("failed to load pcap file, exit\n");
+                exit(1);
+            }
+            break;
+        case 'd':
+            printf("will dump the x3 message\n");
+            g_bdumpX3 = true;
+            break;
+        case 'l':
+            if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
+            {
+                Usage(argv);
+                exit(1);
+            }
+            break;
+        case 'T':
+            TIMEOUT = atoi(optarg);
+            break;
+        case 't':
+            timeout = atoi(optarg);
+            break;
+        case 'c':
+            printf("enable IPv4 header checksum\n");
+            gIP_CHECKSUM = true;
+            break;
+        case 'w':
+            if(CLog::GetInstance(optarg) == NULL)
+            {
+                printf("failed to get the instance of log class, exit\n");
+                exit(1);
+            }
+            break;
+        case 'h':
+        case ':':
+        case '?':
+            Usage(argv);
+            exit(1);
+            break;
+        default:
+            break;
+        }
     }
     if(b_getAddr == false)
     {
         printf("\nError: you should at least specify the ip:port with -l\n\n");
-	Usage(argv);    
+        Usage(argv);
         exit(1);
     }
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
@@ -494,7 +494,7 @@ int main(int argc, char **argv)
         LOG(ERROR,"cannot catch signal");
         exit(1);
     }
-    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread 
+    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread
     LOG(DEBUG,"Li X3 server is launching...");
     struct sockaddr_in serv_addr;
     memset(&serv_addr,0,sizeof(serv_addr));
@@ -526,24 +526,24 @@ int main(int argc, char **argv)
     close(udp_socket);
     close(tcp_socket);
 
-    LOG(DEBUG,"=============================================================================================================================");
+    LOG_RAW("=============================================================================================================================");
     if (g_tcp_recv_num)
     {
-        LOG(DEBUG,"x3 is over TCP");//, recv function returns %d times", g_tcp_recv_num);
+        LOG_RAW("x3 is over TCP");//, recv function returns %d times", g_tcp_recv_num);
         OutputStatics(g_pX3parserforTcp);
     }
     if (g_udp_recv_num)
     {
-        LOG(DEBUG,"x3 is over UDP");//, recv function returns %d times", g_udp_recv_num);
+        LOG_RAW("x3 is over UDP");//, recv function returns %d times", g_udp_recv_num);
         OutputStatics(g_pX3parserforUdp);
     }
     if (g_udp_recv_num == 0 && g_tcp_recv_num == 0)
     {
-        LOG(DEBUG,"no X3 msg is received");
+        LOG_RAW("no X3 msg is received");
     }
     delete g_pX3parserforTcp;
     delete g_pX3parserforUdp;
-    LOG(DEBUG,"=============================================================================================================================");
-   
+    LOG_RAW("=============================================================================================================================");
+
 
 }
