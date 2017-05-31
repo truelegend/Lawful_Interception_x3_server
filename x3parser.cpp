@@ -279,7 +279,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     }
     bool ret = m_x3statistics.SetRtpPT(pHdr->pt);
     bool b_EndofDTMF = false, bValidDTMF = false;
-    if (ret == false && IsValidDTMF(data+sizeof(RTP_HDR), rtp_len-sizeof(RTP_HDR),b_EndofDTMF) == false)
+    if (ret == false && (bValidDTMF=IsValidDTMF(data+sizeof(RTP_HDR), rtp_len-sizeof(RTP_HDR),b_EndofDTMF)) == false)
     {
         LOG(ERROR,"payload_type changed and this is not DTMF pkg");
         return false;

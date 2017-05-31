@@ -220,9 +220,8 @@ void CX3Statistics::SetRtpSeq(unsigned short rtp_seq)
 
 void CX3Statistics::OutputStatics()
 {
-    const int L_SPACE = -30;
+    const int L_SPACE = -28;
     const int R_SPACE = -18;
-    //const int SPACE   = 4;
     const char *target_number = "targets number";
     const char *correlation_id = "correlation-id";
     const char *type ="    type";
@@ -230,16 +229,18 @@ void CX3Statistics::OutputStatics()
     const char  *to = "TO";
     const char *sum = "SUM";
     const char *x3_rtp_no = "    X3_RTP NO.";
-    const char *target_uag_ip = "    target/uag IP";
-    const char *rtp_port = "    rtp target/uag port";
+    const char *target_uag_ip = "    target / uag IP";
+    const char *rtp_port = "    rtp target / uag port";
     const char *pt = "        PT";
     const char *rtp_no = "        RTP NO.";
     const char *ssrc = "        SSRC";
     const char *loss_rate = "        LossRate(%)";
-    const char *dtmf = "        DTMF";
-    const char *rtcp_port = "    rtcp target/uag port";
+    const char *dtmf = "        DTMF(2833)";
+    const char *rtcp_port = "    rtcp target / uag port";
     const char *rtcp_no = "        RTCP NO.";
     const char *x3_msrp_no = "    X3_MSRP NO.";
+    const char *yes  = "Yes";
+    const char *no = "No";
     LOG_RAW("%*s: %d",L_SPACE,target_number, m_x3info.size());
     for(map<string,CSingleTargetInfo>::iterator iter = m_x3info.begin(); iter != m_x3info.end(); ++iter)
     {
@@ -252,8 +253,7 @@ void CX3Statistics::OutputStatics()
 	    from_no = iter->second.m_RtpRtcpInfo.from_target_num;
 	    to_no  = iter->second.m_RtpRtcpInfo.to_target_num;
 	    LOG_RAW("%*s: %*d%*d%*d",L_SPACE,x3_rtp_no,R_SPACE,from_no,R_SPACE,to_no,R_SPACE,from_no+to_no);
-            //LOG_RAW("from_target_num: %d, to_target_num: %d",iter->second.m_RtpRtcpInfo.from_target_num,iter->second.m_RtpRtcpInfo.to_target_num);
-            LOG_RAW("%*s: %s/%s",L_SPACE,target_uag_ip,iter->second.m_RtpRtcpInfo.target_ip,iter->second.m_RtpRtcpInfo.uag_ip);
+            LOG_RAW("%*s: %s / %s",L_SPACE,target_uag_ip,iter->second.m_RtpRtcpInfo.target_ip,iter->second.m_RtpRtcpInfo.uag_ip);
 
             vector<CRtpPortPairInfo> &vec_int_rtp = iter->second.m_RtpRtcpInfo.vec_rtp_pair_info;
             for(vector<CRtpPortPairInfo>::iterator iter_vec = vec_int_rtp.begin(); iter_vec != vec_int_rtp.end(); ++iter_vec)
@@ -262,17 +262,17 @@ void CX3Statistics::OutputStatics()
                 float to_target_loss_rate = iter_vec->GetToRtpLossRate();
 		from_no = iter_vec->from_target_num;
 		to_no = iter_vec->to_target_num;
-		LOG_RAW("%*s: %d/%d",L_SPACE,rtp_port,iter_vec->m_target_port,iter_vec->m_uag_port);
+		LOG_RAW("%*s: %d / %d",L_SPACE,rtp_port,iter_vec->m_target_port,iter_vec->m_uag_port);
                 LOG_RAW("%*s: %d",L_SPACE,pt,iter_vec->payload_type);
 		LOG_RAW("%*s  %*s%*s%*s",L_SPACE,"",R_SPACE,from,R_SPACE,to,R_SPACE,sum);
 		LOG_RAW("%*s: %*d%*d%*d",L_SPACE,rtp_no,R_SPACE,from_no,R_SPACE,to_no,R_SPACE,from_no+to_no);
-		LOG_RAW("%*s: %*.8X%*.8X",L_SPACE,ssrc,R_SPACE,iter_vec->ssrc_from_target,R_SPACE,iter_vec->ssrc_to_target);
+		LOG_RAW("%*s: 0x%*.8X0x%*.8X",L_SPACE,ssrc,R_SPACE+2,iter_vec->ssrc_from_target,R_SPACE,iter_vec->ssrc_to_target);
                 LOG_RAW("%*s: %*.3f%*.3f",L_SPACE,loss_rate,R_SPACE,from_target_loss_rate,R_SPACE,to_target_loss_rate);
-		LOG_RAW("%*s: ",L_SPACE,dtmf);
-                /*LOG_RAW("target port: %d, uag port: %d, from_target_num: %d, to_target_num: %d, rtp payload type: %d, ssrc from target: 0x%X, ssrc to target: 0x%X, \
-from_target_loss_rate: %.3f%, to_target_loss_rate: %.3f%",
-                        iter_vec->m_target_port,iter_vec->m_uag_port,iter_vec->from_target_num,iter_vec->to_target_num,
-                        iter_vec->payload_type,iter_vec->ssrc_from_target,iter_vec->ssrc_to_target,from_target_loss_rate,to_target_loss_rate);*/
+                const char *from_dtmf;
+		const char *to_dtmf;
+		(iter_vec->dtmf_from_target == true)?from_dtmf=yes:from_dtmf=no;
+		(iter_vec->dtmf_to_target == true)?to_dtmf=yes:to_dtmf=no;
+		LOG_RAW("%*s: %*s%*s",L_SPACE,dtmf,R_SPACE,from_dtmf,R_SPACE,to_dtmf);
             }
 
             vector<CRtcpPortPairInfo> &vec_int_rtcp = iter->second.m_RtpRtcpInfo.vec_rtcp_pair_info;
