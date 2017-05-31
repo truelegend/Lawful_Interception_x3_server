@@ -1,7 +1,7 @@
 import socket
 import binascii
 import time
-server_addr = ('192.168.11.105',20000)
+server_addr = ('127.0.0.1',20000)
 client = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
 hdr1 = b'''<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?><!DOCTYPE hi3-uag SYSTEM "hi3-uag.dtd"><hi3-uag><li-tid>31</li-tid><stamp>2016-04-27 04:08:45</stamp><CallDirection>to-target</CallDirection><Correlation-id>1-12c-2-2-20386a</Correlation-id><PayloadType>RTP</PayloadType><PayloadLength>200</PayloadLength></hi3-uag>'''
