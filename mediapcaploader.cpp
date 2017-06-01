@@ -96,7 +96,7 @@ void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
     }
     else
     {
-        printf("WARNING: the seq %d has be loaded-----due to duplicated rtp or dtmp end package!!\n");
+        printf("WARNING: the seq %d has be loaded-----due to duplicated rtp or dtmp end package!!\n",seq);
     }
 }
 
@@ -127,7 +127,7 @@ bool CMediaPcapLoader::CompareRtcpwithX3(const u_char* x3_payload, unsigned int 
     if(rtcp_info.len != len || memcmp(x3_payload,rtcp_info.pApp,len) != 0)
     {
         LOG(ERROR,"rtcp compareing failed, the x3 payload len is %d:%d",rtcp_info.len,len);
-        for(int i=0; i<len; i++)
+        for(unsigned int i=0; i<len; i++)
             printf("%02x",rtcp_info.pApp[i]);
         rtcp_queue.pop();
         return false;
