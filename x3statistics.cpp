@@ -176,46 +176,54 @@ void CX3Statistics::SetX3PkgPara(string &corId, unsigned int x3body_type, unsign
     }
     else
     {
-        //m_x3info[m_cur_corId].SetX3PkgParaForSingle(x3body_type,direction);
-        m_x3info.at(m_cur_corId).SetX3PkgParaForSingle(x3body_type,direction);
+         m_x3info[m_cur_corId].SetX3PkgParaForSingle(x3body_type,direction);
+        //m_x3info.at(m_cur_corId).SetX3PkgParaForSingle(x3body_type,direction);
     }
 }
 bool CX3Statistics::VerifyIPType(unsigned int ip_type)
 {
-    return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPType(ip_type);
+    //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPType(ip_type);
+    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPType(ip_type);
 }
 
 bool CX3Statistics::VerifyIPAddress(void *src, void *dst, int af)
 {
-    return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
+    //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
+    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
 }
 
 void CX3Statistics::SetRtpPort(unsigned short src_port, unsigned short dst_port)
 {
-    m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtpPort(src_port,dst_port);
+    //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtpPort(src_port,dst_port);
+    m_x3info[m_cur_corId].m_RtpRtcpInfo.SetRtpPort(src_port,dst_port);
 }
 void CX3Statistics::SetRtcpPort(unsigned short src_port, unsigned short dst_port)
 {
-    m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtcpPort(src_port,dst_port);
+    //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtcpPort(src_port,dst_port);
+    m_x3info[m_cur_corId].m_RtpRtcpInfo.SetRtcpPort(src_port,dst_port);
 }
 
 bool CX3Statistics::SetRtpPT(unsigned int pt)
 {
-    return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->VerifyRtpPT(pt);
+    //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->VerifyRtpPT(pt);
+    return m_x3info[m_cur_corId].m_RtpRtcpInfo.m_cur_rtp_iter->VerifyRtpPT(pt);
 }
 
 void CX3Statistics::SetRtpDTMF()
 {
-    m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->SetDTMF();
+    //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->SetDTMF();
+    m_x3info[m_cur_corId].m_RtpRtcpInfo.m_cur_rtp_iter->SetDTMF();
 }
 bool CX3Statistics::SetRtpSSRC(unsigned int ssrc)
 {
-    return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->VerifySSRC(ssrc);
+    //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->VerifySSRC(ssrc);
+    return m_x3info[m_cur_corId].m_RtpRtcpInfo.m_cur_rtp_iter->VerifySSRC(ssrc);
 }
 
 void CX3Statistics::SetRtpSeq(unsigned short rtp_seq)
 {
-    m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->SetRtpSeq(rtp_seq);
+    //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.m_cur_rtp_iter->SetRtpSeq(rtp_seq);
+    m_x3info[m_cur_corId].m_RtpRtcpInfo.m_cur_rtp_iter->SetRtpSeq(rtp_seq);
 }
 
 void CX3Statistics::OutputStatics()

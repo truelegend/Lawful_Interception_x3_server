@@ -250,6 +250,12 @@ public:
     CRtpRtcpInfo m_RtpRtcpInfo;
 public:
     CSingleTargetInfo(unsigned int x3body_type, unsigned int direction);
+    // desgin the default constructor just for map operator[] compiling pass requirement, should use .at() function to replace [] in C++11
+    CSingleTargetInfo()
+    {
+	LOG(ERROR,"this should never be called, just for map operator[] compiling pass purpose");
+	exit(1);
+    }
     ~CSingleTargetInfo();
     void SetX3PkgParaForSingle(unsigned int x3body_type, unsigned int direction);
     void SetDirection(unsigned int direction);
