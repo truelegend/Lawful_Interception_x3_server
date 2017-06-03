@@ -144,8 +144,8 @@ void * parseCachedX3(void *x3queue)
         delete [] data;
         if (parse_ret == false)
         {
-            LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above, the program is exiting!");
-            exit(1);
+            LOG(ERROR,"failed to parse this x3 pkg, pls check the ERROR printing above!");
+            //exit(1);
         }
     }
     LOG(DEBUG,"parsing thread exits");
@@ -323,8 +323,8 @@ void* tcpx3thread(void *pSocket)
                 bool parse_ret = g_pX3parserforTcp->parse_x3(x3_buffer,xmlhdr_len+content_len);
                 if (parse_ret == false)
                 {
-                    LOG(ERROR,"failed to parse this x3 pkg, pls check the X3 msg manually, the program is exiting!");
-                    exit(1);
+                    LOG(ERROR,"failed to parse this x3 pkg, pls check the X3 msg manually");
+                    //exit(1);
                 }
                 int next_x3_len = p - tmp_buffer - (xmlhdr_len+content_len);
                 next_x3 = (next_x3_len>0)?true:false;
@@ -362,15 +362,6 @@ void OutputStatics(CX3parser *pX3parser)
         LOG(DEBUG,"######since the original pcap file is supplied, output the statics:######");
         CMediaPcapLoader::GetInstance()->OutputStaticsFromPcap();
     }
-    const char *thumb = "\n\
-             /(|         \n\
-            (  :         \n\
-            _\\  \\  _____ \n\
-         (____)  `|      \n\
-         (____)|  |      \n\
-         (____).__|      \n\
-          (___)__.|_____";
-    LOG_RAW("%s\n",thumb);
 }
 
 void Usage(char **argv)
@@ -446,7 +437,7 @@ int main(int argc, char **argv)
             }
             break;
         case 'd':
-            printf("will dump the x3 message\n");
+            //printf("will dump the x3 message\n");
             g_bdumpX3 = true;
             break;
         case 'l':
@@ -526,7 +517,7 @@ int main(int argc, char **argv)
     close(udp_socket);
     close(tcp_socket);
 
-    LOG_RAW("=============================================================================================================================");
+    LOG_RAW("=========================================================================================");
     if (g_tcp_recv_num)
     {
         LOG_RAW("x3 is over TCP");//, recv function returns %d times", g_tcp_recv_num);
@@ -543,7 +534,5 @@ int main(int argc, char **argv)
     }
     delete g_pX3parserforTcp;
     delete g_pX3parserforUdp;
-    LOG_RAW("=============================================================================================================================");
-
-
+    LOG_RAW("=========================================================================================");
 }

@@ -13,7 +13,6 @@ CX3parser::CX3parser()
     memset(m_format_x3,'\0',sizeof(m_format_x3));
 
     m_iptype       = NOIP;
-    x3_num = 0;
 
     //struct sockaddr_in peeraddr;
     sock = socket(AF_INET,SOCK_DGRAM,0);
@@ -43,19 +42,31 @@ bool CX3parser::parse_x3(unsigned char *x3, int x3_len)
 
     m_x3 = x3;
     m_x3_len = x3_len;
-
-    if (verifyX3hdrformat() == false)
+    m_x3statistics.x3_num++;
+    if(m_dumpX3 == true)
+    {
+	LOG_RAW("\n");
+	LOG(DEBUG,"this is the %d x3 package handled",m_x3statistics.x3_num);
+    }
+    bool ret = verifyX3hdrformat();
+    if (ret == false)
     {
         LOG(ERROR,"wrong x3 hdr format");
-        return false;
+	m_x3statistics.RecordErroredX3();
     }
-    x3_num++;
-
-    bool ret = parse_x3body(m_x3+m_x3_len-m_payloadlen,m_payloadlen);
+    else
+    {
+        ret = parse_x3body(m_x3+m_x3_len-m_payloadlen,m_payloadlen);
+        if(ret == false)
+        {
+            LOG(ERROR,"faild to decode x3 body");
+            m_x3statistics.RecordErroredX3();
+        }
+    }
     if(m_dumpX3 == true)
     {
         formatX3();
-        LOG(DEBUG,"dump the received x3 data:\n%s\n", m_format_x3);
+        LOG(DEBUG,"dump the received x3 data:\n%s", m_format_x3);
     }
     return ret;
 }
@@ -83,12 +94,7 @@ bool CX3parser::getElementValue(const char* str, char* value)
 }
 bool CX3parser::parse_x3body(unsigned char *body, int len)
 {
-    m_xmlrear = (unsigned char *)getX3hdrrear();
-    if (!m_xmlrear)
-    {
-        LOG(ERROR,"failed to find the rear of x3 hdr");
-        return false;
-    }
+    assert(m_xmlrear != NULL);
     if (m_xmlrear != body)
     {
         LOG(ERROR,"this should be wrong, the beginning of x3 body is not correct");
@@ -166,6 +172,10 @@ char* CX3parser::getX3hdrrear()
 
 bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len)
 {
+    char str_src_ip[IP_STRING_LEN], str_dst_ip[IP_STRING_LEN];
+    memset(str_src_ip,0,IP_STRING_LEN);
+    memset(str_dst_ip,0,IP_STRING_LEN);
+    bool ret;
     switch(m_iptype)
     {
     case IPV4:
@@ -189,7 +199,8 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
         }
         total_len = ntohs(pHdr->m_sTotalLenOfPacket);
         //return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
-        return m_x3statistics.VerifyIPAddress(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
+        ret = m_x3statistics.VerifyIPAddress(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,str_src_ip,str_dst_ip);
+	break;
     }
     case IPV6:
     {
@@ -202,7 +213,8 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
         // Won't consider extended ipv6 hdr for now
         ip_hdr_len = sizeof(IPv6_HDR);
         total_len = ip_hdr_len + ntohs(pHdr->m_usPayloadlen);
-        return m_x3statistics.VerifyIPAddress(&pHdr->m_in6addrSourIp,&pHdr->m_in6addrDestIp,AF_INET6);
+        ret = m_x3statistics.VerifyIPAddress(&pHdr->m_in6addrSourIp,&pHdr->m_in6addrDestIp,str_src_ip,str_dst_ip);
+	break;
     }
     default:
     {
@@ -210,16 +222,21 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
         return false;
     }
     }
-
+    if(m_dumpX3 == true)
+    {
+        LOG(DEBUG,"src ip: %s, dst ip: %s",str_src_ip,str_dst_ip);
+    }
+    return ret;
 }
 unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
 {
     UDP_HDR *pHdr = (UDP_HDR *)body;
     unsigned short src_port = ntohs(pHdr->m_usSourPort);
     unsigned short dst_port = ntohs(pHdr->m_usDestPort);
-    //LOG(DEBUG,"source port: %d",src_port);
-    //LOG(DEBUG,"dst port: %d",dst_port);
-
+    if(m_dumpX3 == true)
+    {
+        LOG(DEBUG,"src port: %d, dst port: %d",src_port,dst_port);
+    }
     if (m_payloadtype == X3_RTP)
     {
         if((src_port%2 == 0) && (dst_port%2 == 0))
@@ -291,7 +308,7 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     ret = m_x3statistics.SetRtpSSRC(ntohl(pHdr->ssrc));
     if (ret == false)
     {
-        LOG(ERROR,"from_target ssrc changed");
+        LOG(ERROR,"SSRC changed");
         return false;
     }
     m_x3statistics.SetRtpSeq(rtp_seq);
@@ -326,7 +343,24 @@ bool CX3parser::parse_msrp(unsigned char *data)
 
 bool CX3parser::verifyX3hdrformat()
 {
-    //unsigned int direction;
+    m_xmlrear = (unsigned char *)getX3hdrrear();
+    if (!m_xmlrear)
+    {
+        LOG(ERROR,"failed to find the rear of x3 hdr");
+        return false;
+    }
+    // <PayloadLength>280</PayloadLength>
+    if (getElementValue("PayloadLength",tmp))
+    {
+        m_payloadlen = atoi(tmp);
+        //LOG(DEBUG,"PayloadLength is %d",m_payloadlen);
+    }
+    else
+    {
+        LOG(ERROR,"failed to get PayloadLength tag value");
+        return false;
+    }
+
     string corId;
     // <li-tid>700</li-tid>
     if (getElementValue("li-tid",tmp) == false)
@@ -394,17 +428,6 @@ bool CX3parser::verifyX3hdrformat()
         LOG(ERROR,"failed to get PayloadType tag value");
         return false;
     }
-    // <PayloadLength>280</PayloadLength>
-    if (getElementValue("PayloadLength",tmp))
-    {
-        m_payloadlen = atoi(tmp);
-        //LOG(DEBUG,"PayloadLength is %d",m_payloadlen);
-    }
-    else
-    {
-        LOG(ERROR,"failed to get PayloadLength tag value");
-        return false;
-    }
     m_x3statistics.SetX3PkgPara(corId,m_payloadtype,m_calldirection);
     return true;
 }
@@ -420,9 +443,9 @@ char* CX3parser::formatX3xml()
 {
     int r_anglebracket_num = 0;
     char *start_format_x3 = m_format_x3;
-
+    assert(m_xmlrear != NULL);
     for(char *start = (char *)m_x3; start != (char *)m_xmlrear; start++)
-    {
+    {   
         *start_format_x3++ = *start;
         if (*start == '>')
         {
@@ -455,8 +478,12 @@ void CX3parser::formatX3payload(unsigned char *data)
         LOG(ERROR,"data is NULL");
     }
     unsigned char *start = (unsigned char*)m_xmlrear;
-    unsigned char *end = (unsigned char*)m_xmlrear+m_payloadlen;
-
+    if(m_payloadlen == -1)
+    {
+	LOG(ERROR,"Not got payloadlen, so cannot display x3 payload");
+	return;
+    }
+    unsigned char *end = (unsigned char*)m_xmlrear + m_payloadlen;
     if (m_payloadtype == X3_MSRP)
     {
         memcpy(data,start,m_payloadlen);
@@ -471,7 +498,7 @@ void CX3parser::formatX3payload(unsigned char *data)
         *data++ = map[*start%16];
         start++;
     }
-    *data = '\n';
+    //*data = '\n';
 }
 
 

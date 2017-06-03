@@ -42,8 +42,10 @@ CRtpRtcpInfo::CRtpRtcpInfo()
     */
 }
 
-bool CRtpRtcpInfo::VerifyIPAddress(void *src, void *dst, int af)
+bool CRtpRtcpInfo::VerifyIPAddress(const void *src, const void *dst, char *src_ip, char *dst_ip)
 {
+    assert(m_iptype != NOIP);
+    int af = m_iptype == IPV4?AF_INET:AF_INET6;
     if ((from_target_num+to_target_num) == 1)
     {
         ip_addr_map[TO_DIRECTION][SRC] = uag_ip;
@@ -60,6 +62,8 @@ bool CRtpRtcpInfo::VerifyIPAddress(void *src, void *dst, int af)
             LOG(ERROR,"failed to get ip addr");
             return false;
         }
+	strcpy(src_ip,ip_addr_map[m_cur_direction][SRC]);
+	strcpy(dst_ip,ip_addr_map[m_cur_direction][DST]);
     }
     else
     {
@@ -81,6 +85,8 @@ bool CRtpRtcpInfo::VerifyIPAddress(void *src, void *dst, int af)
             LOG(ERROR,"failed to get ip addr");
             return false;
         }
+	strcpy(src_ip,tmp_ip_addr_map[m_cur_direction][SRC]);
+	strcpy(dst_ip,tmp_ip_addr_map[m_cur_direction][DST]);
         if(strcmp(target_ip,tmp_target_ip) != 0) {
             LOG(ERROR,"target IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);
             return false;
@@ -158,14 +164,14 @@ vector<CRtcpPortPairInfo>::iterator CRtpRtcpInfo::findExistedRtcpPortPair(unsign
 
 CX3Statistics::CX3Statistics()
 {
-
+    x3_num = 0;
 }
 
 CX3Statistics::~CX3Statistics()
 {
 
 }
-void CX3Statistics::SetX3PkgPara(string &corId, unsigned int x3body_type, unsigned int direction)
+void CX3Statistics::SetX3PkgPara(const string &corId, unsigned int x3body_type, unsigned int direction)
 {
     m_cur_corId = corId;
     if(m_x3info.find(m_cur_corId) == m_x3info.end())
@@ -186,10 +192,10 @@ bool CX3Statistics::VerifyIPType(unsigned int ip_type)
     return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPType(ip_type);
 }
 
-bool CX3Statistics::VerifyIPAddress(void *src, void *dst, int af)
+bool CX3Statistics::VerifyIPAddress(const void *src, const void *dst, char *src_ip, char *dst_ip)
 {
     //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
-    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
+    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPAddress(src, dst, src_ip,dst_ip);
 }
 
 void CX3Statistics::SetRtpPort(unsigned short src_port, unsigned short dst_port)
@@ -230,6 +236,7 @@ void CX3Statistics::OutputStatics()
 {
     const int L_SPACE = -28;
     const int R_SPACE = -18;
+    const char *total_x3_number = "total X3 / errored X3 number";
     const char *target_number = "targets number";
     const char *correlation_id = "correlation-id";
     const char *type ="    type";
@@ -249,6 +256,21 @@ void CX3Statistics::OutputStatics()
     const char *x3_msrp_no = "    X3_MSRP NO.";
     const char *yes  = "Yes";
     const char *no = "No";
+    unsigned int err_no = m_error_pkg_vec.size();
+    if(err_no != 0)
+    {
+        LOG_RAW("\n\
+     ________________________________________________________________________________\n\
+    |                                                                                |\n\
+    |                                        WARNING!                                |\n\
+    | If you see the warning msg, it indicates some X3 packages are not correct,     |\n\
+    | please search the ERROR print in log or find the first wrong package in log by |\n\
+    | the number:%5d if you are using '-d' as the startup parameter. The below     |\n\
+    | summary will be just for your reference and not accurate                       |\n\
+    |________________________________________________________________________________|\n",
+    *m_error_pkg_vec.begin());
+    }
+    LOG_RAW("%*s: %d / %d",L_SPACE,total_x3_number,x3_num,m_error_pkg_vec.size());
     LOG_RAW("%*s: %d",L_SPACE,target_number, m_x3info.size());
     for(map<string,CSingleTargetInfo>::iterator iter = m_x3info.begin(); iter != m_x3info.end(); ++iter)
     {
@@ -303,4 +325,20 @@ void CX3Statistics::OutputStatics()
 	    LOG_RAW("%*s: %*d%*d%*d",L_SPACE,x3_msrp_no,R_SPACE,from_no,R_SPACE,to_no,R_SPACE,from_no+to_no);
         }
     }
+    if(err_no == 0)
+    {
+        const char *thumb = "\n\
+               /(|         \n\
+              (  :         \n\
+              _\\  \\  _____ \n\
+           (____)  `|      \n\
+           (____)|  |      \n\
+           (____).__|      \n\
+            (___)__.|_____";
+        LOG_RAW("%s\n",thumb);
+    }
+}
+void CX3Statistics::RecordErroredX3()
+{
+   m_error_pkg_vec.push_back(x3_num); 
 }

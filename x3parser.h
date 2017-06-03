@@ -148,7 +148,6 @@ public:
     void SetIfDumpX3(bool b) {
         m_dumpX3 = b;
     }
-    unsigned int x3_num;
 
     CX3Statistics m_x3statistics;
 

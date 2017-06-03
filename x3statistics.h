@@ -119,7 +119,7 @@ public:
     {
         //LOG(DEBUG,"real_sum %d, min seq %d, max seq %d",real_sum,min,max);
         if(real_sum == 0)
-            return 0;
+            return 100;
         unsigned expected_sum  = (min <= max)?(max-min+1):(65536-min+max+1);
         assert(expected_sum >= real_sum);
         float rate =  (float)(expected_sum - real_sum) / expected_sum * 100;
@@ -232,7 +232,7 @@ public:
     {
         return SetAndVerifyValue(from_target_num+to_target_num,m_iptype,ip_type);
     }
-    bool VerifyIPAddress(void *src, void *dst, int af);
+    bool VerifyIPAddress(const void *src, const void *dst,char *src_ip, char *dst_ip);
     void SetRtpPort(unsigned short src_port, unsigned short dst_port);
     void SetRtcpPort(unsigned short src_port, unsigned short dst_port);
     std::vector<CRtpPortPairInfo>::iterator findExistedRtpPortPair(unsigned short target_port,unsigned short uag_port);
@@ -268,19 +268,22 @@ private:
 
     std::map<std::string,CSingleTargetInfo> m_x3info;
     std::string m_cur_corId;
+    std::vector<unsigned int> m_error_pkg_vec;
 
 public:
+    unsigned int x3_num;
     CX3Statistics();
     ~CX3Statistics();
-    bool VerifyIPAddress(void *src, void *dst, int af);
+    bool VerifyIPAddress(const void *src, const void *dst,char *src_ip, char *dst_ip);
     bool VerifyIPType(unsigned int ip_type);
-    void SetX3PkgPara(std::string & corId, unsigned int x3body_type, unsigned int direction);
+    void SetX3PkgPara(const std::string & corId, unsigned int x3body_type, unsigned int direction);
     void SetRtpPort(unsigned short src_port, unsigned short dst_port);
     void SetRtcpPort(unsigned short src_port, unsigned short dst_port);
     bool SetRtpPT(unsigned int pt);
     void SetRtpDTMF();
     bool SetRtpSSRC(unsigned int ssrc);
     void SetRtpSeq(unsigned short rtp_seq);
+    void RecordErroredX3();
     void OutputStatics();
 
 
