@@ -54,27 +54,7 @@ Result Sample:
 450000c8000040003f1112600a0213780a02014a182c1ba600b4bce880080000000003c000007b47d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d555d5d5d5d5d5d5d5d5d555d5d5d5d5d55555d5d5d5d55555d5d5d5d55555d5d555d5d5555754d7d1d6d7d7d7d6d4565c5f51d4d0d3d0555f585d565656d1d8ded6d5d1d75651d4d0555f5850d0d9dfd6d5d5d55457515056d5d0dcd8d8d3515e52d4d1d5535e5f57d1d657535257d7d6565c50d6ddd65555d7d1d3dcd2d75456505d5c51
 
 
-<10:44:31 DEBUG>[parse_x3(x3parser.cpp:49)] this is the 2 x3 package handled
-<10:44:31 DEBUG>[parse_ip_hdr(x3parser.cpp:227)] src ip: 10.2.19.120, dst ip: 10.2.1.74
-<10:44:31 DEBUG>[parse_udp_hdr(x3parser.cpp:238)] src port: 6190, dst port: 7080
-<10:44:31 DEBUG>[parse_rtp(x3parser.cpp:295)] rtp sequence is 0, payload type is 0, SSRC is 0x7B47, rtp len 172
-<10:44:31 DEBUG>[parse_x3(x3parser.cpp:69)] dump the received x3 data:
-<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
-<!DOCTYPE hi3-uag SYSTEM "hi3-uag.dtd">
-<hi3-uag>
-  <li-tid>31</li-tid>
-  <stamp>2016-04-27 04:08:45</stamp>
-  <CallDirection>from-target</CallDirection>
-  <Correlation-id>1-12c-2-2-20386a</Correlation-id>
-  <PayloadType>RTP</PayloadType>
-  <PayloadLength>200</PayloadLength>
-</hi3-uag>
-450000c8000040003f1112600a0213780a02014a182e1ba800b4bce880000000000003c000007b47d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d555d5d5d5d5d5d5d5d5d555d5d5d5d5d55555d5d5d5d55555d5d5d5d55555d5d555d5d5555754d7d1d6d7d7d7d6d4565c5f51d4d0d3d0555f585d565656d1d8ded6d5d1d75651d4d0555f5850d0d9dfd6d5d5d55457515056d5d0dcd8d8d3515e52d4d1d5535e5f57d1d657535257d7d6565c50d6ddd65555d7d1d3dcd2d75456505d5c51
-................................................
-................................................
-<10:44:33 DEBUG>[udpx3thread(li_server.cpp:200)] recvfrom funtion return <= 0
-<10:44:33 DEBUG>[parseCachedX3(li_server.cpp:151)] parsing thread exits
-<10:44:33 DEBUG>[udpx3thread(li_server.cpp:213)] udp thread exits
+...............................................
 =========================================================================================
 x3 is over UDP
 total X3 / errored X3 number: 7 / 0
@@ -110,21 +90,6 @@ correlation-id              : 1-12c-2-2-20386a
         SSRC                : 0x00007B47        0x00000000          
         LossRate(%)         : 0.000             100.000           
         DTMF(2833)          : No                No                
-correlation-id              : 1-12c-33-2-20386a
-    type                    : X3_RTP
-                              FROM              TO                SUM               
-    X3_RTP NO.              : 1                 1                 2                 
-    target / uag IP         : 10.2.19.120 / 10.2.1.74
-    rtp target / uag port   : 6190 / 7080
-        PT                  : 0
-                              FROM              TO                SUM               
-        RTP NO.             : 1                 0                 1                 
-        SSRC                : 0x00007B47        0x00000000          
-        LossRate(%)         : 0.000             100.000           
-        DTMF(2833)          : No                No                
-    rtcp target / uag port  : 6189/7079
-                              FROM              TO                SUM               
-        RTCP NO.            : 0                 1                 1                 
 correlation-id              : 2-12c-2-2-0386a
     type                    : X3_MSRP
                               FROM              TO                SUM               
