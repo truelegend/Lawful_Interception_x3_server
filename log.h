@@ -18,7 +18,6 @@ enum LOG_LEVEL
     WARNING = 1,
     ERROR =   2
 };
-static const char* log_level_array[] = {"DEBUG","WARNING","ERROR"};
 class CLog
 {
 public:

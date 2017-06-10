@@ -149,6 +149,7 @@ void * parseCachedX3(void *x3queue)
         }
     }
     LOG(DEBUG,"parsing thread exits");
+    return NULL;
 }
 void* udpx3thread(void *pSocket)
 {
@@ -211,6 +212,7 @@ void* udpx3thread(void *pSocket)
     }
     pthread_cancel(g_tcpx3thNo);
     LOG(DEBUG,"udp thread exits");
+    return NULL;
 }
 void* tcpx3thread(void *pSocket)
 {
@@ -351,6 +353,7 @@ void* tcpx3thread(void *pSocket)
     }
     pthread_cancel(g_udpx3thNo);
     LOG(DEBUG,"tcp thead exits");
+    return NULL;
 }
 
 void OutputStatics(CX3parser *pX3parser)

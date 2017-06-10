@@ -1,4 +1,6 @@
 #include "log.h"
+
+static const char* log_level_array[] = {"DEBUG","WARNING","ERROR"};
 CLog* CLog::instance = NULL;
 CLog::CGarbo CLog::m_garbo;
 CLog::CLog(const char *logfile)
