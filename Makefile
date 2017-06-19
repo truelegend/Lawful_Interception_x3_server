@@ -9,7 +9,7 @@ all: li_server
 .PHONY: all
 
 li_server: $(objs)
-	$(CXX) $(CXXFLAGS) $(libs) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ $(libs) -o $@
 
 li_server.o: li_server.cpp log.h x3parser.h udpx3cachequeue.h li_server.h
 	$(CXX) $(CXXFLAGS) -c $< 
