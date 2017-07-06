@@ -496,11 +496,7 @@ int main(int argc, char **argv)
             gIP_CHECKSUM = true;
             break;
         case 'w':
-            if(CLog::GetInstance(optarg) == NULL)
-            {
-                printf("failed to get the instance of log class, exit\n");
-                exit(1);
-            }
+            CLog::GetInstance()->SpecifyLogfilename(optarg);
             break;
         case 'h':
         case ':':
@@ -518,8 +514,8 @@ int main(int argc, char **argv)
         Usage(argv);
 	exit(1);
     }
-    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread
-    LOG(DEBUG,"Li X3 server is launching...");
+    // Obsoleted comment below because the non-lazy Log Singleton pattern implementation
+    // "This is important to initialize Log instance firstly to avoid initialization in multiple-thread"
     LOG(DEBUG,"LI X3 servie is listening on port: %d",server_port);
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {

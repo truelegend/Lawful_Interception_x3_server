@@ -21,11 +21,12 @@ enum LOG_LEVEL
 class CLog
 {
 public:
-    static CLog* GetInstance(const char* logfile = "/tmp/li.log");
+    static CLog* GetInstance();
     void WriteLog(const char* func, const char* codeFile, long codeLine,int level, const char* format,...);
     void WriteRawLog(const char* format,...);
+    void SpecifyLogfilename(const char *logfilename);
 private:
-    CLog(const char *logfile);
+    CLog(const char *logfile = "/tmp/li.log");
     ~CLog();
     CLog(CLog const&);            // Don't Implement
     void operator=(CLog const&); // Don't implement

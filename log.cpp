@@ -1,7 +1,8 @@
 #include "log.h"
 
 static const char* log_level_array[] = {"DEBUG","WARNING","ERROR"};
-CLog* CLog::instance = NULL;
+//CLog* CLog::instance = NULL;
+CLog* CLog::instance = new CLog();
 CLog::CGarbo CLog::m_garbo;
 CLog::CLog(const char *logfile)
 {
@@ -14,7 +15,10 @@ CLog::CLog(const char *logfile)
     //mutex_x = PTHREAD_MUTEX_INITIALIZER;
     int ret = pthread_mutex_init(&mutex_x, NULL);
     if (ret != 0)
+    {
         printf("error happend when try to initialize mutex\n");
+	exit(1);
+    }
 }
 CLog::~CLog()
 {
@@ -26,15 +30,17 @@ CLog::~CLog()
     //if (instance)
     //  delete instance;
 }
-CLog* CLog::GetInstance(const char* logfile)
+CLog* CLog::GetInstance()
 {
     if (!instance)
     {
-        instance = new CLog(logfile);
+	printf("this should not happen............");
+        instance = new CLog();
     }
     return instance;
 }
-void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,int level, const char* format,...)
+void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,
+		int level, const char* format,...)
 {
     pthread_mutex_lock(&mutex_x);
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
@@ -51,8 +57,8 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,int lev
     char szTime[30] = {'\0'};
     strftime(szTime,30, "%H:%M:%S", tLocalTime);
 
-    printf("<%s %s>[%s(%s:%d)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
-    fprintf(m_logfile, "<%s %s>[%s(%s:%d)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+    printf("<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+    fprintf(m_logfile, "<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_mutex_unlock(&mutex_x);
 }
@@ -72,7 +78,22 @@ void CLog::WriteRawLog(const char* format,...)
     pthread_mutex_unlock(&mutex_x);
 }
 
-
+void CLog::SpecifyLogfilename(const char *logfilename)
+{
+    pthread_mutex_lock(&mutex_x);
+    if(m_logfile)
+    {
+	fclose(m_logfile);
+	m_logfile = NULL;
+    }
+    m_logfile = fopen(logfilename, "w");
+    if (!m_logfile)
+    {
+	printf("unable to open log file, exit\n");
+	exit(1);
+    }
+    pthread_mutex_unlock(&mutex_x);
+}
 
 
 
