@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "li_server.h"
 #include "udpx3cachequeue.h"
+#include <net/if.h>
 using namespace std;
 
 #define RECV_BUFFER_MAX 2048
@@ -31,7 +32,7 @@ int getContentLen(char* data)
     char* pleft = strstr(data,leftstr.c_str());
     if (!pleft)
     {
-        LOG(DEBUG,"Not complete, cannot find %s",leftstr.c_str());
+        //LOG(DEBUG,"Not complete, cannot find %s",leftstr.c_str());
         return -1;
     }
     char* pright = strstr(data,rightstr.c_str());
@@ -59,15 +60,15 @@ char *getXmlRear(char *data)
     return (rear+strlen("</hi3-uag>"));
 }
 
-int starupServSocket(struct sockaddr_in &serv_addr,int type)
+int starupServSocket(struct sockaddr_in6 &serv_addr,int type)
 {
-    int sockfd = socket(AF_INET,type,0);
+    int sockfd = socket(AF_INET6,type,0);
     if(sockfd < 0)
     {
         LOG(ERROR,"socket descriptor is invalid, error code: %d-%s",errno,strerror(errno));
         exit(1);
     }
-    int brst = bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(struct sockaddr));
+    int brst = bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
     if(brst == -1)
     {
         LOG(ERROR,"failed to bind address, error code: %d-%s",errno,strerror(errno));
@@ -105,8 +106,28 @@ int starupServSocket(struct sockaddr_in &serv_addr,int type)
         LOG(ERROR,"failed to set TIMEOUT for receiving socket");
         exit(1);
     }
-    //exit(1);
+    /*int no = 0;     
+    if(setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&no, sizeof(no)) != 0)
+    {
+        LOG(ERROR,"failed to unset ipv6only");
+	exit(1);
+    }*/
     return sockfd;
+}
+char * TransIPv4MappedAddr(char *src)
+{
+    const char *prefix = "::ffff:";
+    int pre_len = strlen(prefix);
+    if(strncmp(src,prefix,pre_len) == 0) 
+    {
+	LOG(DEBUG,"X3 is from the IPv4 address");
+	return src+pre_len;
+    }
+    else
+    {
+	LOG(DEBUG,"X3 is from the IPv6 address");
+	return src;
+    }
 }
 void * parseCachedX3(void *x3queue)
 {
@@ -154,7 +175,7 @@ void * parseCachedX3(void *x3queue)
 void* udpx3thread(void *pSocket)
 {
     int *p_serve_sock = (int *)pSocket;
-    struct sockaddr_in client_addr;
+    struct sockaddr_in6 client_addr;
     memset(&client_addr,0,sizeof(client_addr));
     unsigned char buffer[RECV_BUFFER_MAX+1];
     CUdpX3CacheQueue x3cachequeue;
@@ -169,6 +190,7 @@ void* udpx3thread(void *pSocket)
     timeval tv;
     tv.tv_sec = timeout;
     tv.tv_usec = 0;
+    char strPeerAddr[INET6_ADDRSTRLEN];
     while(1)
     {
         memset(&buffer,0,sizeof(buffer));
@@ -183,6 +205,12 @@ void* udpx3thread(void *pSocket)
                     LOG(ERROR,"failed to set TIMEOUT for receiving socket");
                     exit(1);
                 }
+		
+		getpeername(*p_serve_sock, (struct sockaddr *)&client_addr, &len);
+		if(inet_ntop(AF_INET6, &client_addr.sin6_addr, strPeerAddr, sizeof(strPeerAddr)))
+		{
+		    LOG(DEBUG,"the peer address is: %s, peer port is: %d", TransIPv4MappedAddr(strPeerAddr), ntohs(client_addr.sin6_port));
+		}
             }
             //LOG(DEBUG,"%d bytes received from ip:%s, port: %d",recv_len,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
             // lock
@@ -217,7 +245,7 @@ void* udpx3thread(void *pSocket)
 void* tcpx3thread(void *pSocket)
 {
     int *p_serve_sock = (int *)pSocket;
-    struct sockaddr_in client_addr;
+    struct sockaddr_in6 client_addr;
     memset(&client_addr,0,sizeof(client_addr));
     if(listen(*p_serve_sock,1) == -1)
     {
@@ -225,16 +253,21 @@ void* tcpx3thread(void *pSocket)
         exit(1);
     }
     socklen_t len = sizeof(client_addr);
-    int client_sockfd = accept(*p_serve_sock, (struct sockaddr*)&client_addr, &len);
+    int client_sockfd = accept(*p_serve_sock, NULL, NULL);
     if (client_sockfd < 0)
     {
         LOG(DEBUG,"failed to accept, tcp thread exits ");
         return NULL;
         //exit(1);
     }
-    LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
+    //LOG(DEBUG,"accepted from peer, ip: %s, port: %d", inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
+    getpeername(client_sockfd, (struct sockaddr *)&client_addr, &len);
+    char strPeerAddr[INET6_ADDRSTRLEN];
+    if(inet_ntop(AF_INET6, &client_addr.sin6_addr, strPeerAddr, sizeof(strPeerAddr)))
+    {
+        LOG(DEBUG,"the peer address is: %s, peer port is: %d", TransIPv4MappedAddr(strPeerAddr), ntohs(client_addr.sin6_port));
+    }
     unsigned char buffer[RECV_BUFFER_MAX+1];
-    //char buffer[123];
     int content_len = -1;
     int xmlhdr_len = -1;
     bool next_x3 = false;
@@ -272,7 +305,7 @@ void* tcpx3thread(void *pSocket)
                     exit(1);
                 }
             }
-            LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
+            //LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
             if((p - tmp_buffer) > sizeof(tmp_buffer))
@@ -288,7 +321,7 @@ void* tcpx3thread(void *pSocket)
                     if(content_len == -1)
                     {
                         content_len = getContentLen((char *)tmp_buffer);
-                        LOG(DEBUG,"get content_len: %d", content_len);
+                        //LOG(DEBUG,"get content_len: %d", content_len);
                         if(content_len == -1)
                         {
                             LOG(DEBUG,"Note: cannot find content_len, need to recv again!");
@@ -321,7 +354,7 @@ void* tcpx3thread(void *pSocket)
                     }
                 }
                 memcpy(x3_buffer,tmp_buffer,xmlhdr_len+content_len);
-                LOG(DEBUG,"xmlhdr_len %d, content_len %d", xmlhdr_len,content_len);
+                //LOG(DEBUG,"xmlhdr_len %d, content_len %d", xmlhdr_len,content_len);
                 bool parse_ret = g_pX3parserforTcp->parse_x3(x3_buffer,xmlhdr_len+content_len);
                 if (parse_ret == false)
                 {
@@ -334,7 +367,7 @@ void* tcpx3thread(void *pSocket)
                 {
                     memmove(tmp_buffer,tmp_buffer+xmlhdr_len+content_len,next_x3_len);
                     tmp_buffer[next_x3_len] = '\0';
-                    LOG(DEBUG,"the next x3 pkg exists, next_x3_len %d",next_x3_len);
+                    //LOG(DEBUG,"the next x3 pkg exists, next_x3_len %d",next_x3_len);
                 }
                 content_len = -1;
                 xmlhdr_len = -1;
@@ -369,8 +402,8 @@ void OutputStatics(CX3parser *pX3parser)
 
 void Usage(char **argv)
 {
-    printf("usage:\n\n%s -l local_ip:local_port [optional options]\n\n", argv[0]);
-    printf("    -l : mandatory arguments, specify the local ip and port for listening x3, separated by ':'\n\n"
+    printf("usage:\n\n%s -l local_port [optional options]\n\n", argv[0]);
+    printf("    -l : mandatory arguments, specify the local port for listening x3, this tool will listen on all the local IP addresses\n\n"
            "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
            "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
            "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
@@ -379,9 +412,9 @@ void Usage(char **argv)
            "    -d : dump the x3 msg body\n\n"
           );
 
-    printf("Example:\n\n    ./li_server -l 10.2.22.150:20000 -d\n\n"
+    printf("Example:\n\n    ./li_server -l 20000 -d\n\n"
            "    or\n\n"
-           "    ./li_server -l 10.2.22.150:20000 -d -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
+           "    ./li_server -l 20000 -d -c -T 10 -w /root/my-li.log -f /root/srtp/rtp-rtcp.pcap\n\n"
           );
 }
 
@@ -422,9 +455,7 @@ bool parseIPPort(const char *optarg, char *str_ip, char *str_port)
 
 int main(int argc, char **argv)
 {
-    char str_ip[20];
-    char str_port[10];
-    bool b_getAddr = false;
+    unsigned short server_port = 0;
     const char *argus = "l:f:t:T:w:hcd";
     int opt;
     while ((opt = getopt(argc, argv, argus)) != -1)
@@ -444,11 +475,12 @@ int main(int argc, char **argv)
             g_bdumpX3 = true;
             break;
         case 'l':
-            if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
+            /*if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
             {
                 Usage(argv);
                 exit(1);
-            }
+            }*/
+	    server_port = atoi(optarg);
             break;
         case 'T':
             TIMEOUT = atoi(optarg);
@@ -477,24 +509,25 @@ int main(int argc, char **argv)
             break;
         }
     }
-    if(b_getAddr == false)
+    if(0 == server_port)
     {
-        printf("\nError: you should at least specify the ip:port with -l\n\n");
+	printf("\nError: you should at least specify the port with -l\n\n");
         Usage(argv);
-        exit(1);
+	exit(1);
     }
+    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread
+    LOG(DEBUG,"Li X3 server is launching...");
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {
         LOG(ERROR,"cannot catch signal");
         exit(1);
     }
-    // This is important to initialize Log instance firstly to avoid initialization in multiple-thread
-    LOG(DEBUG,"Li X3 server is launching...");
-    struct sockaddr_in serv_addr;
+    struct sockaddr_in6 serv_addr;
     memset(&serv_addr,0,sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(str_port));
-    serv_addr.sin_addr.s_addr = inet_addr(str_ip);
+    serv_addr.sin6_family = AF_INET6;
+    serv_addr.sin6_port = htons(server_port);
+    serv_addr.sin6_addr = in6addr_any;
+    //serv_addr.sin6_scope_id = if_nametoindex("lo");
     int udp_socket = starupServSocket(serv_addr,SOCK_DGRAM);
     int tcp_socket = starupServSocket(serv_addr,SOCK_STREAM);
     int ret;
