@@ -520,6 +520,7 @@ int main(int argc, char **argv)
     }
     // This is important to initialize Log instance firstly to avoid initialization in multiple-thread
     LOG(DEBUG,"Li X3 server is launching...");
+    LOG(DEBUG,"LI X3 servie is listening on port: %d",server_port);
     if (signal(SIGINT,sigint_handler) == SIG_ERR)
     {
         LOG(ERROR,"cannot catch signal");
