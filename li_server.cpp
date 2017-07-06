@@ -68,6 +68,14 @@ int starupServSocket(struct sockaddr_in6 &serv_addr,int type)
         LOG(ERROR,"socket descriptor is invalid, error code: %d-%s",errno,strerror(errno));
         exit(1);
     }
+    //By default, /proc/sys/net/ipv6/bindv6only would be 0, i.e. IPV6_V6ONLY is off. Add the logic below in case 
+    //the bindv6only value is changed manually. This setsockopt func should be called before bind() 
+    int no = 0;     
+    if(setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&no, sizeof(no)) != 0)
+    {
+        LOG(ERROR,"failed to disable ipv6only mode, %d:%s",errno,strerror(errno));
+	exit(1);
+    }
     int brst = bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
     if(brst == -1)
     {
@@ -106,12 +114,7 @@ int starupServSocket(struct sockaddr_in6 &serv_addr,int type)
         LOG(ERROR,"failed to set TIMEOUT for receiving socket");
         exit(1);
     }
-    /*int no = 0;     
-    if(setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&no, sizeof(no)) != 0)
-    {
-        LOG(ERROR,"failed to unset ipv6only");
-	exit(1);
-    }*/
+    
     return sockfd;
 }
 char * TransIPv4MappedAddr(char *src)
