@@ -439,23 +439,17 @@ void sigint_handler(int sig)
     }
 }
 
-bool parseIPPort(const char *optarg, char *str_ip, char *str_port)
+bool IsValidNum(const char *str)
 {
-    assert(optarg != NULL);
-    const char *pc = strchr(optarg,':');
-    if(NULL == pc || pc == optarg)
+    for(const char *p = str; *p != '\0'; p++)
     {
-        printf("missing ':' between ip and port");
-        return false;
+	if(*p < '0' || *p > '9')
+	{
+            return false;
+	}
     }
-    assert(*(pc+1) != '\0');
-
-    memcpy(str_ip,optarg,pc-optarg);
-    str_ip[pc-optarg] = '\0';
-    strcpy(str_port,pc+1);
     return true;
 }
-
 int main(int argc, char **argv)
 {
     unsigned short server_port = 0;
@@ -478,12 +472,10 @@ int main(int argc, char **argv)
             g_bdumpX3 = true;
             break;
         case 'l':
-            /*if((b_getAddr = parseIPPort(optarg,str_ip,str_port)) == false)
-            {
-                Usage(argv);
-                exit(1);
-            }*/
-	    server_port = atoi(optarg);
+            if(IsValidNum(optarg) == true)
+	    {
+	        server_port = atoi(optarg);
+	    }
             break;
         case 'T':
             TIMEOUT = atoi(optarg);
@@ -510,7 +502,7 @@ int main(int argc, char **argv)
     }
     if(0 == server_port)
     {
-	printf("\nError: you should at least specify the port with -l\n\n");
+	printf("\nError: you should at least specify the port with an integer -l\n\n");
         Usage(argv);
 	exit(1);
     }
