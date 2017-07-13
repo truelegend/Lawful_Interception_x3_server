@@ -212,7 +212,21 @@ class CRtpRtcpInfo: public CBaseInfo
 {
 private:
     char *ip_addr_map[2][2];
+    template<class Container> 
+    typename Container::iterator FindPortPair(unsigned short target_port,unsigned short uag_port, Container &con)
+    {
+        typename Container::iterator iter;
+        for(iter = con.begin(); iter != con.end(); ++iter)
+        {
+            if (iter->m_target_port == target_port
+                && iter->m_uag_port == uag_port)
+            {
+                return iter;
+            }
+        }
+        return iter;
 
+    }
 
 public:
 
@@ -235,8 +249,8 @@ public:
     bool VerifyIPAddress(const void *src, const void *dst,char *src_ip, char *dst_ip);
     void SetRtpPort(unsigned short src_port, unsigned short dst_port);
     void SetRtcpPort(unsigned short src_port, unsigned short dst_port);
-    std::vector<CRtpPortPairInfo>::iterator findExistedRtpPortPair(unsigned short target_port,unsigned short uag_port);
-    std::vector<CRtcpPortPairInfo>::iterator findExistedRtcpPortPair(unsigned short target_port,unsigned short uag_port);
+    //std::vector<CRtpPortPairInfo>::iterator findExistedRtpPortPair(unsigned short target_port,unsigned short uag_port);
+    //std::vector<CRtcpPortPairInfo>::iterator findExistedRtcpPortPair(unsigned short target_port,unsigned short uag_port);
 };
 
 

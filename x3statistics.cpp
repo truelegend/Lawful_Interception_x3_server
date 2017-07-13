@@ -103,12 +103,13 @@ void CRtpRtcpInfo::SetRtpPort(unsigned short src_port, unsigned short dst_port)
 {
     unsigned short target_port = (m_cur_direction==FROM_DIRECTION)?src_port:dst_port;
     unsigned short uag_port = (m_cur_direction==FROM_DIRECTION)?dst_port:src_port;
-    vector<CRtpPortPairInfo>::iterator iter = findExistedRtpPortPair(target_port, uag_port);
+    //vector<CRtpPortPairInfo>::iterator iter = findExistedRtpPortPair(target_port, uag_port);
+    vector<CRtpPortPairInfo>::iterator iter = FindPortPair(target_port, uag_port,vec_rtp_pair_info);
     if(iter == vec_rtp_pair_info.end())
     {
         CRtpPortPairInfo rtp_port_pair(target_port,uag_port,m_cur_direction);
         vec_rtp_pair_info.push_back(rtp_port_pair);
-        m_cur_rtp_iter = findExistedRtpPortPair(target_port,uag_port);
+        m_cur_rtp_iter = FindPortPair(target_port,uag_port,vec_rtp_pair_info);
     }
     else
     {
@@ -121,12 +122,13 @@ void CRtpRtcpInfo::SetRtcpPort(unsigned short src_port, unsigned short dst_port)
 {
     unsigned short target_port = (m_cur_direction==FROM_DIRECTION)?src_port:dst_port;
     unsigned short uag_port = (m_cur_direction==FROM_DIRECTION)?dst_port:src_port;
-    vector<CRtcpPortPairInfo>::iterator iter = findExistedRtcpPortPair(target_port, uag_port);
+    //vector<CRtcpPortPairInfo>::iterator iter = findExistedRtcpPortPair(target_port, uag_port);
+    vector<CRtcpPortPairInfo>::iterator iter = FindPortPair(target_port, uag_port,vec_rtcp_pair_info);
     if(iter == vec_rtcp_pair_info.end())
     {
         CRtcpPortPairInfo rtcp_port_pair(target_port,uag_port,m_cur_direction);
         vec_rtcp_pair_info.push_back(rtcp_port_pair);
-        m_cur_rtcp_iter = findExistedRtcpPortPair(target_port,uag_port);
+        m_cur_rtcp_iter = FindPortPair(target_port,uag_port,vec_rtcp_pair_info);
     }
     else
     {
@@ -134,7 +136,7 @@ void CRtpRtcpInfo::SetRtcpPort(unsigned short src_port, unsigned short dst_port)
         m_cur_rtcp_iter = iter;
     }
 }
-vector<CRtpPortPairInfo>::iterator CRtpRtcpInfo::findExistedRtpPortPair(unsigned short target_port,unsigned short uag_port)
+/* vector<CRtpPortPairInfo>::iterator CRtpRtcpInfo::findExistedRtpPortPair(unsigned short target_port,unsigned short uag_port)
 {
     vector<CRtpPortPairInfo>::iterator iter;
     for(iter = vec_rtp_pair_info.begin(); iter != vec_rtp_pair_info.end(); ++iter)
@@ -161,7 +163,7 @@ vector<CRtcpPortPairInfo>::iterator CRtpRtcpInfo::findExistedRtcpPortPair(unsign
     }
     return iter;
 }
-
+*/
 CX3Statistics::CX3Statistics()
 {
     x3_num = 0;

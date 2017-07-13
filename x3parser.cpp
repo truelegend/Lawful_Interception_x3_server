@@ -104,7 +104,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     if(m_payloadtype == X3_MSRP)
     {
         //(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
-        LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
+        //LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
         return true;
     }
 
@@ -248,7 +248,7 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
         else if((src_port%2 != 0) && (dst_port%2 != 0))
         {
             m_real_rtptype = REAL_RTCP;
-            LOG(DEBUG,"this is RTCP msg");
+            //LOG(DEBUG,"this is RTCP msg");
             m_x3statistics.SetRtcpPort(src_port,dst_port);
         }
         else
