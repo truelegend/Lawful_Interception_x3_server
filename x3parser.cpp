@@ -104,7 +104,7 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
     if(m_payloadtype == X3_MSRP)
     {
         //(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
-        //LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't deocde further");
+        //LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't decode further");
         return true;
     }
 
