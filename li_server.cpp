@@ -419,6 +419,7 @@ void Usage(char **argv)
            "    -f : specify the original pcap file to be compared with received x3\n\n"
            "    -c : enable the IPv4 hdr checksum\n\n"
            "    -d : dump the x3 msg body\n\n"
+	   "    -b : enter background mode\n\n"
           );
 
     printf("Example:\n\n    ./li_server -l 20000 -d\n\n"
