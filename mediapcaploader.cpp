@@ -25,16 +25,16 @@ CMediaPcapLoader* CMediaPcapLoader::GetInstance()
 }
 bool CMediaPcapLoader::LoadPcapfile(const char* pcapfile)
 {
-    printf("loading pcap file......\n");
+    LOG(DEBUG,"loading pcap file......");
     char errbuf[50];
     if ((m_fp = pcap_open_offline(pcapfile, errbuf)) == NULL)
     {
-        printf("unable to open pcap file\n");
+        LOG(ERROR,"unable to open pcap file");
         return false;
     }
     pcap_loop(m_fp, 0, CMediaPcapLoader::dispatcher_handler, (u_char *)this);
     pcap_close(m_fp);
-    printf("loading pcap file done\n");
+    LOG(DEBUG,"loading pcap file done");
     return true;
 }
 
@@ -44,8 +44,8 @@ void CMediaPcapLoader::dispatcher_handler(u_char *temp1, const struct pcap_pkthd
     CMediaPcapLoader *pLoader = (CMediaPcapLoader *)temp1;
     if(header->caplen != header->len)
     {
-        printf("this captured pkg length is not equal with the actual real pkg length!\n");
-        return;
+        LOG(ERROR,"this captured pkg length is not equal with the actual real pkg length, this pcap file is invalid");
+        exit(1);
     }
     u_short port = ntohs(*(u_short*) (pkt_data+14+20));
     const u_char *rtp_data = pkt_data + 14 + 20 +8;
@@ -59,7 +59,6 @@ void CMediaPcapLoader::dispatcher_handler(u_char *temp1, const struct pcap_pkthd
     {
         //printf("this is rtcp\n");
         pLoader->BuildRtcpQueue(rtp_data,len);
-
     }
 }
 
@@ -69,7 +68,7 @@ void CMediaPcapLoader::BuildRtcpQueue(const u_char *data,int len)
     rtcp_info.pApp = new u_char[len];
     if(NULL == rtcp_info.pApp)
     {
-        printf("failed to allocate memory for rtcp");
+        LOG(ERROR,"failed to allocate memory for rtcp");
         exit(1);
     }
     rtcp_info.len = len;
@@ -87,7 +86,7 @@ void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
         rtp_table[seq].pApp = new u_char[len];
         if(NULL == rtp_table[seq].pApp)
         {
-            printf("failed to allocate memory for rtp");
+            LOG(ERROR,"failed to allocate memory for rtp");
             exit(1);
         }
         memcpy(rtp_table[seq].pApp,data,len);
@@ -96,21 +95,21 @@ void CMediaPcapLoader::BuildRtpTable(const u_char *data,int len)
     }
     else
     {
-        printf("WARNING: the seq %d has be loaded-----due to duplicated rtp or dtmp end package!!\n",seq);
+        LOG(WARNING,"the RTP seq %d has been loaded-----due to duplicated rtp or dtmp end package!\n",seq);
     }
 }
 
 bool CMediaPcapLoader::CompareRtpwithX3(const u_char* x3_payload, unsigned int len, u_short seq,int direction)
 {
     assert(x3_payload != NULL && len != 0);
+    direction==1?rtp_table[seq].from=true:rtp_table[seq].to=true;
     if(rtp_table[seq].len != len || memcmp(x3_payload,rtp_table[seq].pApp,len) != 0)
     {
-        LOG(ERROR,"rtp compareing failed, the x3 payload len of sequence %d is %d:%d",seq,rtp_table[seq].len,len);
+        LOG(ERROR,"rtp comparing failed, the x3 payload len of sequence %d is %d:%d",seq,rtp_table[seq].len,len);
         return false;
     }
     //else
     //{LOG(DEBUG,"........................................................................");}
-    direction==1?rtp_table[seq].from=true:rtp_table[seq].to=true;
     return true;
 }
 
@@ -149,17 +148,18 @@ void CMediaPcapLoader::OutputStaticsFromPcap()
             rtp_num_fromX3_to++;
     }
     LOG(DEBUG,"the rtp num from x3 is from_target: %d, to_target: %d",rtp_num_fromX3_from,rtp_num_fromX3_to);
+    if(m_rtcp_num_frompcap == 0)
+    {
+        return;
+    }
     int size = rtcp_queue.size();
     if(size != 0)
     {
-        LOG(ERROR,"the size of RTCP queue is %d, there must be RTCP missing from x3",size);
+        LOG(ERROR,"there are %d RTCP pkg left not compared, there must be RTCP missing from x3",size);
     }
-    else
+    else 
     {
-        LOG(DEBUG,"RTCP packages are all handled successfully");
+        LOG(DEBUG,"RTCP packages are all handled successfully, if there any RTCP received");
     }
 
 }
-
-
-

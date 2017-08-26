@@ -320,7 +320,12 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
         }
         else
         {
-            return COMPARE_RTP(data,rtp_len,rtp_seq,m_calldirection);
+            bool ret = COMPARE_RTP(data,rtp_len,rtp_seq,m_calldirection);
+            if(m_dumpX3 == true)
+            {
+               LOG(DEBUG,"Comparing RTP with original RTP from pcap file %s",ret==true?"succeeded":"failed");
+            }
+            return ret;
         }
     }
     /*if (m_calldirection == FROMTARGET)

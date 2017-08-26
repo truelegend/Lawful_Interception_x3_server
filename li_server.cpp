@@ -410,7 +410,7 @@ void Usage(char **argv)
            "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
            "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
            "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
-           "    -f : specify the original pcap file to be compared with received x3\n\n"
+           "    -f : specify the original pcap file Sipp used to be compared with received x3, only for single LI target\n\n"
            "    -c : enable the IPv4 hdr checksum\n\n"
            "    -d : dump the x3 msg body\n\n"
           );
@@ -453,6 +453,8 @@ bool IsValidNum(const char *str)
 int main(int argc, char **argv)
 {
     unsigned short server_port = 0;
+    char pcap_file[50];
+    memset(pcap_file,0,sizeof(pcap_file));
     const char *argus = "l:f:t:T:w:hcd";
     int opt;
     while ((opt = getopt(argc, argv, argus)) != -1)
@@ -461,11 +463,7 @@ int main(int argc, char **argv)
         {
         case 'f':
             g_benablePcapFile = true;
-            if(LOAD_PCAP(optarg) == false)
-            {
-                printf("failed to load pcap file, exit\n");
-                exit(1);
-            }
+            strcpy(pcap_file, optarg);
             break;
         case 'd':
             //printf("will dump the x3 message\n");
@@ -505,6 +503,11 @@ int main(int argc, char **argv)
 	printf("\nError: you should at least specify the port with an integer -l\n\n");
         Usage(argv);
 	exit(1);
+    }
+    if(g_benablePcapFile == true && LOAD_PCAP(pcap_file) == false)
+    {
+        printf("failed to load pcap file, exit\n");
+        exit(1);
     }
     // Obsoleted comment below because the non-lazy Log Singleton pattern implementation
     // "This is important to initialize Log instance firstly to avoid initialization in multiple-thread"
