@@ -8,6 +8,12 @@
 #include "li_server.h"
 #include "udpx3cachequeue.h"
 #include <net/if.h>
+
+#include <sys/types.h>    
+#include <sys/stat.h>    
+#include <fcntl.h>
+
+
 using namespace std;
 
 #define RECV_BUFFER_MAX 2048
@@ -410,7 +416,7 @@ void Usage(char **argv)
            "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
            "    -t : timeout timer for socket recv if x3 pkg has been received, in seconds, the default is 2s\n\n"
            "    -w : specify the outputed log file path and file name, the default is /tmp/li.log\n\n"
-           "    -f : specify the original pcap file Sipp used to be compared with received x3, only for single LI target\n\n"
+           "    -f : specify the original pcap file to be compared with received x3\n\n"
            "    -c : enable the IPv4 hdr checksum\n\n"
            "    -d : dump the x3 msg body\n\n"
           );
@@ -455,8 +461,9 @@ int main(int argc, char **argv)
     unsigned short server_port = 0;
     char pcap_file[50];
     memset(pcap_file,0,sizeof(pcap_file));
-    const char *argus = "l:f:t:T:w:hcd";
+    const char *argus = "l:f:t:T:w:hcdb";
     int opt;
+    bool bBgmode = false;
     while ((opt = getopt(argc, argv, argus)) != -1)
     {
         switch(opt)
@@ -465,6 +472,9 @@ int main(int argc, char **argv)
             g_benablePcapFile = true;
             strcpy(pcap_file, optarg);
             break;
+	case 'b':
+	    bBgmode = true;
+	    break;
         case 'd':
             //printf("will dump the x3 message\n");
             g_bdumpX3 = true;
@@ -504,9 +514,36 @@ int main(int argc, char **argv)
         Usage(argv);
 	exit(1);
     }
+    if(bBgmode == true) 
+    {
+        pid_t l_pid;
+        switch (l_pid = fork()) 
+	{
+        case -1:
+            // error when forking !
+            LOG(ERROR,"Forking error, unable to enter background mode!");
+            exit(1);
+        case 0:
+            // child process - poursuing the execution
+            // close all of our file descriptors
+        {
+            int nullfd = open("/dev/null", O_RDWR);
+            dup2(nullfd, fileno(stdin));
+            dup2(nullfd, fileno(stdout));
+            dup2(nullfd, fileno(stderr));
+
+            close(nullfd);
+        }
+        break;
+        default:
+            // parent process - killing the parent - the child get the parent pid
+            printf("Background mode - PID=[%d]\n", l_pid);
+            exit(2);
+        }	
+    }
     if(g_benablePcapFile == true && LOAD_PCAP(pcap_file) == false)
     {
-        printf("failed to load pcap file, exit\n");
+        LOG(ERROR,"failed to load pcap file, exit");
         exit(1);
     }
     // Obsoleted comment below because the non-lazy Log Singleton pattern implementation
