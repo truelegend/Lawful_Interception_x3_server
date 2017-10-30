@@ -2,7 +2,7 @@ Design and implement one simulated Lawful Interception X3 server for UAG LI test
 For X3 over TCP: tcp segments are handle so no need to worry about incomplete or multiple X3 packages received in a single tcp segment.
 For X3 over UDP: a separate cache thread is implemented to avoid package drop due to handling of heavy udp traffic. 
 This server supports multiple targets monitoring.
-
+No commercial usage permitted!
 [root@promote Lawful_Interception_x3_server]# ./li_server 
 
 
