@@ -7,3 +7,4 @@ li_server
 test.cpp
 val
 .*
+*.dep
