@@ -11,6 +11,7 @@
 #include "x3parser.h"
 #include "log.h"
 #include "mediapcaploader.h"
+#include "version.h"
 int getContentLen(char* data);
 char *getXmlRear(char *data);
 void sigint_handler(int sig);
