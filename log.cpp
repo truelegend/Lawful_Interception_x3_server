@@ -1,5 +1,5 @@
 #include "log.h"
-
+#include <assert.h>
 static const char* log_level_array[] = {"DEBUG","WARNING","ERROR"};
 //CLog* CLog::instance = NULL;
 CLog* CLog::instance = new CLog();
@@ -44,13 +44,17 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,
 {
     pthread_mutex_lock(&mutex_x);
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-    char str[20480] = {0};
     va_list args;
     va_start(args, format);
-    vsprintf(str, format, args);
+    int n = vsnprintf(NULL, 0, format, args) + 1;
+    assert(n>1);
     va_end(args);
-    //struct timeval time;
-    //gettimeofday(&time,NULL);
+    char str = new char[n];
+    assert(str != NULL);
+    va_start(args, format);
+    vsnprintf(str, n,format, args);
+    str[n-1] = '\0';
+    va_end(args);
     time_t tNow;
     time(&tNow);
     tm* tLocalTime = localtime(&tNow);
@@ -59,6 +63,7 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,
 
     printf("<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
     fprintf(m_logfile, "<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+    delete[] str;
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_mutex_unlock(&mutex_x);
 }
@@ -94,48 +99,4 @@ void CLog::SpecifyLogfilename(const char *logfilename)
     }
     pthread_mutex_unlock(&mutex_x);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
