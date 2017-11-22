@@ -99,7 +99,7 @@ public:
         dtmf_from_target = false;
         dtmf_to_target = false;
 
-        payload_type        = -1;
+        payload_type        = 999;
         ssrc_from_target    = 0;
         ssrc_to_target      = 0;
         from_target_minseq  = -1;
@@ -157,7 +157,7 @@ public:
 
     std::bitset<65536> from_target_seqset;
     std::bitset<65536> to_target_seqset;
-    int   payload_type;
+    unsigned int   payload_type;
     unsigned int   ssrc_from_target;
     unsigned int   ssrc_to_target;
     int            from_target_minseq;
@@ -232,7 +232,7 @@ public:
 
     char target_ip[IP_STRING_LEN];
     char uag_ip[IP_STRING_LEN];
-    int  m_iptype;
+    unsigned int  m_iptype;
     std::vector<CRtpPortPairInfo> vec_rtp_pair_info;
     std::vector<CRtcpPortPairInfo> vec_rtcp_pair_info;
     std::vector<CRtpPortPairInfo>::iterator m_cur_rtp_iter;

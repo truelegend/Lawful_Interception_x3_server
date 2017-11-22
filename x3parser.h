@@ -162,7 +162,7 @@ private:
     int m_payloadtype;
     int m_calldirection;
     int m_real_rtptype;
-    int m_iptype;
+    unsigned int m_iptype;
 
     char m_format_x3[4096];
     bool m_dumpX3;

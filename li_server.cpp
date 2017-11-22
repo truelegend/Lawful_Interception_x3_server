@@ -317,7 +317,7 @@ void* tcpx3thread(void *pSocket)
             //LOG(DEBUG,"%d bytes received from tcp peer",recv_len);
             memcpy(p,buffer,recv_len);
             p += recv_len;
-            if((p - tmp_buffer) > sizeof(tmp_buffer))
+            if((size_t)(p - tmp_buffer) > sizeof(tmp_buffer))
             {
                 LOG(ERROR,"seems not valid x3 msg, out of array");
                 exit(1);

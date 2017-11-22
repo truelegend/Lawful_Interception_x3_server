@@ -1,4 +1,4 @@
-CXXFLAGS += -Wall -Wextra -pthread
+CXXFLAGS += -Wall -Wextra -pthread -Wno-unused-parameter
 ifndef RELEASE
     CXXFLAGS += -g
 endif
