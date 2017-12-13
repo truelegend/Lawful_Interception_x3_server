@@ -7,21 +7,40 @@ srcs = $(wildcard *.cpp)
 objs = $(srcs:.cpp=.o)
 deps = $(srcs:.cpp=.dep)
 libs = -lpthread -lpcap
+ver_headfile = version.h
+ver := $(shell echo "generate version.h";sed -e "s/<version>/$$(git describe)/g" < version.h.in > version.h.tmp;\
+	if diff -q version.h.tmp version.h >/dev/null 2>&1; \
+	then \
+	    rm -f version.h.tmp; \
+	else \
+	    echo "version.h.in => version.h"; \
+	    mv version.h.tmp version.h; \
+	fi)
 
-
-
-.PHONY: all clean
+.PHONY: all clean 
 all: li_server
 
 -include $(deps)
 
 li_server: $(objs)
 	@echo "Linking $@"
-	$(CXX) $(CXXFLAGS) $^ $(libs) -o $@
+	$(CXX) $(CXXFLAGS) $(filter-out version.h, $^) $(libs) -o $@
 ifdef RELEASE
 	strip --strip-unneeded -R .note -R .comment $@
 endif
 
+#version.h:
+#	@echo "generate version.h"
+#	@sed -e "s/<version>/$$(git describe)/g" \
+#		< version.h.in > version.h.tmp
+#	@if diff -q version.h.tmp version.h >/dev/null 2>&1; \
+#	then \
+#	    rm -f version.h.tmp; \
+#	else \
+#	    echo "version.h.in => version.h"; \
+#	    mv version.h.tmp version.h; \
+#	fi
+#
 %.o: %.cpp
 	@echo "Compiling $@"
 	$(CXX) $(CXXFLAGS) -c $<
@@ -55,4 +74,4 @@ endif
 
 
 clean:
-	$(RM)  $(objs) li_server *.gch *.dep*
+	$(RM)  $(objs) li_server *.gch *.dep* $(ver_headfile)

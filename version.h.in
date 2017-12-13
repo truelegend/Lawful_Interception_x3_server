@@ -1,0 +1,6 @@
+#ifndef LI_VERSION_H
+#define LI_VERSION_H
+
+#define _VERSION "<version>"
+
+#endif

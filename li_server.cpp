@@ -411,6 +411,7 @@ void OutputStatics(CX3parser *pX3parser)
 
 void Usage(char **argv)
 {
+    printf("version: %s.\n", _VERSION);
     printf("usage:\n\n%s -l local_port [optional options]\n\n", argv[0]);
     printf("    -l : mandatory arguments, specify the local port for listening x3, this tool will listen on all the local IP addresses\n\n"
            "    -T : timeout timer for socket recv if no pkg is received at all, in seconds, the default is 60s\n\n"
