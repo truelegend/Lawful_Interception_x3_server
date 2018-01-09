@@ -55,14 +55,23 @@ void CLog::WriteLog(const char* func,const char* codeFile, long codeLine,
     vsnprintf(str, n,format, args);
     str[n-1] = '\0';
     va_end(args);
-    time_t tNow;
-    time(&tNow);
-    tm* tLocalTime = localtime(&tNow);
-    char szTime[30] = {'\0'};
-    strftime(szTime,30, "%H:%M:%S", tLocalTime);
+//    time_t tNow;
+//    time(&tNow);
+//    tm* tLocalTime = localtime(&tNow);
+//    char szTime[30] = {'\0'};
+//    strftime(szTime,30, "%H:%M:%S", tLocalTime);
+    struct timeval stru_time;
+    gettimeofday(&stru_time,NULL);
+    char buffer[40] = {'\0'};
+    strftime(buffer, 40, "%H:%M:%S", localtime(&stru_time.tv_sec));
+    int milli = stru_time.tv_usec / 1000;
+    char szTime_new[45] = {'\0'};
+    sprintf(szTime_new, "%s.%d", buffer, milli);
 
-    printf("<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
-    fprintf(m_logfile, "<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+//    printf("<%s %s>[%s(%s:%ld)] %s\n", szTime,log_level_array[level],func,codeFile,codeLine,str);
+    printf("<%s %s>[%s(%s:%ld)] %s\n", szTime_new,log_level_array[level],func,codeFile,codeLine,str);
+   
+    fprintf(m_logfile, "<%s %s>[%s(%s:%ld)] %s\n", szTime_new,log_level_array[level],func,codeFile,codeLine,str);
     delete[] str;
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_mutex_unlock(&mutex_x);
