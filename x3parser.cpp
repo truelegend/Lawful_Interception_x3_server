@@ -101,32 +101,46 @@ bool CX3parser::parse_x3body(unsigned char *body, int len)
         return false;
     }
     //LOG(DEBUG,"Got the correct beginning of x3 body");
-    if(m_payloadtype == X3_MSRP)
-    {
-        //(m_calldirection == FROMTARGET)?from_msrp_num++:to_msrp_num++;
-        //LOG(DEBUG,"It is MSRP, the xml body doesn't contain ip hdr/etc., so won't decode further");
-        return true;
-    }
-
     unsigned char *start = body;
-    m_iptype = *start>>4;
-    switch(m_iptype)
-    {
-    case IPV4:
-    case IPV6:
-        if (m_x3statistics.VerifyIPType(m_iptype) == false)
-        {
-            LOG(ERROR,"ip type cannot change!");
-            return false;
-        }
-        break;
-    default:
-        LOG(ERROR,"unrecoginzied ip type: %d", m_iptype);
-        return false;
+    if(m_payloadtype == X3_MSRP)
+    {//return true;
+        return parse_x3body_MSRP(start, len);
     }
+    else //ip/udp/rtp rtcp 
+    {
+        return parse_x3body_RTXP(start, len);
+    }
+}
+bool CX3parser::parse_x3body_MSRP(unsigned char *body, int len)
+{
+    unsigned char *start = body;
 
     int ip_hdr_len, total_len;
-    if (parse_ip_hdr(start,ip_hdr_len,total_len) == false)
+    if (parse_ip_hdr(start, ip_hdr_len, total_len, IPPROTO_TCP, true, check_ipv4_hdr_for_msrp, NULL /* no ipv6 flag check for now*/) == false)
+    {
+        return false;
+    }
+    if (total_len != m_payloadlen)
+    {
+        LOG(ERROR,"the decoded payload len %d is not equal with the decalard one %d",total_len,m_payloadlen);
+        return false;
+    }
+    start += ip_hdr_len;
+    int tcp_hdr_len;
+    if(!parse_tcp_hdr(start, total_len - ip_hdr_len, tcp_hdr_len, check_tcp_hdr_for_msrp))
+    {
+        LOG(ERROR,"parsing tcp hdr failed");
+        return false;
+    }
+    start += tcp_hdr_len;
+    return parse_msrp((unsigned char*)start);
+}
+bool CX3parser::parse_x3body_RTXP(unsigned char *body, int len)
+{
+    unsigned char *start = body;
+
+    int ip_hdr_len, total_len;
+    if (parse_ip_hdr(start, ip_hdr_len, total_len, IPPROTO_UDP, m_ipchecksum) == false)
     {
         return false;
     }
@@ -170,8 +184,24 @@ char* CX3parser::getX3hdrrear()
     return (rear+strlen("</hi3-uag>"));
 }
 
-bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len)
+bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len, uint8_t prot, bool do_checksum, check_ipv4_hdr_func ipv4_checker, check_ipv6_hdr_func ipv6_checker)
 {
+    m_iptype = *body>>4;
+    switch(m_iptype)
+    {
+    case IPV4:
+    case IPV6:
+        if (m_x3statistics.VerifyIPType(m_iptype) == false)
+        {
+            LOG(ERROR,"ip type cannot change!");
+            return false;
+        }
+        break;
+    default:
+        LOG(ERROR,"unrecoginzied ip type: %d", m_iptype);
+        return false;
+    }
+
     char str_src_ip[IP_STRING_LEN], str_dst_ip[IP_STRING_LEN];
     memset(str_src_ip,0,IP_STRING_LEN);
     memset(str_dst_ip,0,IP_STRING_LEN);
@@ -181,9 +211,9 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
     case IPV4:
     {
         IPv4_HDR *pHdr = (IPv4_HDR *)body;
-        if (pHdr->m_cTypeOfProtocol != 17) // for RTP/RTCP, it is over UDP
+        if (pHdr->m_cTypeOfProtocol != prot) // for RTP/RTCP, it is over UDP; for MSRP, it is over TCP
         {
-            LOG(ERROR,"the upper protocol is not UDP");
+            LOG(ERROR,"the upper protocol is not expected: %d vs %d", pHdr->m_cTypeOfProtocol, prot);
             return false;
         }
         ip_hdr_len = (pHdr->m_cVersionAndHeaderLen & 0x0f) *4;
@@ -192,28 +222,43 @@ bool CX3parser::parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_le
             LOG(ERROR,"the decoded ipv4 hdr is not correct");
             return false;
         }
-        if (m_ipchecksum == true && verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
+        if (do_checksum == true && verifyIPhdrChecksum((u_short *)pHdr,ip_hdr_len/2) == false)
         {
             LOG(ERROR,"ip hdr checksum failed");
             return false;
         }
         total_len = ntohs(pHdr->m_sTotalLenOfPacket);
-        //return getIPaddrAndVerify(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,AF_INET);
+        if(ipv4_checker && !ipv4_checker(pHdr)) {return false;}
         ret = m_x3statistics.VerifyIPAddress(&pHdr->m_in4addrSourIp,&pHdr->m_in4addrDestIp,str_src_ip,str_dst_ip);
+        
+        m_pseu_ipv4_hdr.m_in4addrSourIp = pHdr->m_in4addrSourIp;
+        m_pseu_ipv4_hdr.m_in4addrDestIp = pHdr->m_in4addrDestIp;
+        m_pseu_ipv4_hdr.m_zero = 0;
+        m_pseu_ipv4_hdr.m_ptcl = prot;
+        m_pseu_ipv4_hdr.m_len = htons(total_len - ip_hdr_len);
 	break;
     }
     case IPV6:
     {
         IPv6_HDR *pHdr = (IPv6_HDR *)body;
-        if (pHdr->m_ucNexthdr != 17) // for RTP/RTCP, it is over UDP
+        if (pHdr->m_ucNexthdr != prot) // for RTP/RTCP, it is over UDP
         {
-            LOG(ERROR,"the upper protocol is not UDP");
+            LOG(ERROR,"the upper protocol is not expected: %d vs %d", pHdr->m_ucNexthdr, prot);
             return false;
         }
         // Won't consider extended ipv6 hdr for now
         ip_hdr_len = sizeof(IPv6_HDR);
         total_len = ip_hdr_len + ntohs(pHdr->m_usPayloadlen);
+        if(ipv6_checker && !ipv6_checker(pHdr))
+        {
+            return false;
+        }
         ret = m_x3statistics.VerifyIPAddress(&pHdr->m_in6addrSourIp,&pHdr->m_in6addrDestIp,str_src_ip,str_dst_ip);
+        m_pseu_ipv6_hdr.m_in6addrSourIp = pHdr->m_in6addrSourIp;
+        m_pseu_ipv6_hdr.m_in6addrDestIp = pHdr->m_in6addrDestIp;
+        m_pseu_ipv6_hdr.m_len = htonl(total_len - ip_hdr_len);
+        m_pseu_ipv6_hdr.m_zero = 0;
+        m_pseu_ipv6_hdr.m_ptcl = prot;
 	break;
     }
     default:
@@ -265,6 +310,43 @@ unsigned short CX3parser::parse_udp_hdr(unsigned char *body)
     return ntohs(pHdr->m_usLength);
 }
 
+bool CX3parser::parse_tcp_hdr(unsigned char *hdr, int total_len, int &tcp_hdr_len, check_tcp_hdr_func tcp_checker)
+{
+    if (m_payloadtype != X3_MSRP)
+    {
+        LOG(ERROR,"parse_tcp_hdr function should be called only when payload type is MSRP");
+        return false;
+    }
+    TCP_HDR *pHdr = (TCP_HDR *)hdr;
+    unsigned short src_port = ntohs(pHdr->m_usSourPort);
+    unsigned short dst_port = ntohs(pHdr->m_usDestPort);
+    m_x3statistics.SetMsrpPort(src_port, dst_port);
+    unsigned int seq_no = ntohl(pHdr->m_SequNum);
+    if(!m_x3statistics.VerifyTCPSequence(seq_no))
+    {
+        return false;
+    }
+    unsigned int ack_seq_no = ntohl(pHdr->m_AcknowledgeNum);
+    tcp_hdr_len = pHdr->m_len * 4;
+    if (tcp_hdr_len != sizeof(TCP_HDR))
+    {
+        LOG(WARNING, "this tcp hdr contains options flag or is wrong, tcp hdr len: %d", tcp_hdr_len);
+    }
+    if(tcp_checker && !tcp_checker(pHdr)) {return false;}
+    if(m_dumpX3 == true)
+    {
+        LOG(DEBUG, "src port: %d, dst port: %d",src_port,dst_port);
+        LOG(DEBUG, "sequence number: %lu", seq_no);
+        LOG(DEBUG, "ack sequence number: %lu", ack_seq_no);
+
+    }
+    if(!verifyTCPhdrChecksum(hdr, total_len))
+    {
+        LOG(ERROR, "tcp hdr checksum failed!");
+        return false;
+    }
+    return true;
+}
 bool CX3parser::parse_rtcp(unsigned char *data, int rtcp_len)
 {
     //the first bits of RTCP and RTP are the same, so here we just use the struct for RTP
@@ -343,6 +425,10 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
 
 bool CX3parser::parse_msrp(unsigned char *data)
 {
+    if(m_dumpX3)
+    {
+        LOG(DEBUG,"dump the msrp data:\n%s", data);
+    }
     return true;
 }
 
@@ -489,12 +575,12 @@ void CX3parser::formatX3payload(unsigned char *data)
 	return;
     }
     unsigned char *end = (unsigned char*)m_xmlrear + m_payloadlen;
-    if (m_payloadtype == X3_MSRP)
-    {
-        memcpy(data,start,m_payloadlen);
-        *(data + m_payloadlen) = '\0';
-        return;
-    }
+    // if (m_payloadtype == X3_MSRP)
+    // {
+    //     memcpy(data,start,m_payloadlen);
+    //     *(data + m_payloadlen) = '\0';
+    //     return;
+    // }
     char map[] = "0123456789abcdef";
 
     while(start != end)
@@ -554,7 +640,7 @@ bool CX3parser::IsValidDTMF(u_char *dtmf, int dtmf_len, bool & b_end)
 }
 // size is in u_short unit
 bool CX3parser:: verifyIPhdrChecksum(u_short *hdr, u_int size)
-{
+{   
     u_int cksum = 0;
     for(unsigned int i=0; i<size; i++)
     {
@@ -567,4 +653,87 @@ bool CX3parser:: verifyIPhdrChecksum(u_short *hdr, u_int size)
     us_chksum == 0?ret = true:ret = false;
     return ret;
 }
+bool CX3parser::verifyTCPhdrChecksum(unsigned char *hdr, int size)
+{
+    char *buf = new (std::nothrow) char[65536];
+    if(buf == NULL)
+    {
+        LOG(ERROR, "failed to allocate memory");
+        return false;
+    }
+    if(m_iptype == IPV4)
+    {
+        memcpy(buf, &m_pseu_ipv4_hdr, sizeof(m_pseu_ipv4_hdr));
+        memcpy(buf+sizeof(m_pseu_ipv4_hdr), hdr, size);
+        size += sizeof(m_pseu_ipv4_hdr);
+    }
+    else
+    {
+        memcpy(buf, &m_pseu_ipv6_hdr, sizeof(m_pseu_ipv6_hdr));
+        memcpy(buf+sizeof(m_pseu_ipv6_hdr), hdr, size);
+        size += sizeof(m_pseu_ipv6_hdr);
+    }
+    
+    u_int cksum = 0;
+    u_short *start = (u_short *)buf;
+    while(size > 1)
+    {
+        cksum += *start++;
+        size -= sizeof(u_short);
+    }
+    if (size)
+    {
+        // LOG(DEBUG, "odd");
+        cksum += *(u_char *)start;
+        // u_short odd = 0;
+        // *((u_char *)&odd) = *(u_char *)start;
+        // cksum += odd;
+    }
+    cksum = (cksum>>16) + (cksum & 0xffff);
+    cksum += (cksum>>16);
+    u_short us_chksum = (u_short)(~cksum);
+    if(m_dumpX3 == true)
+    {
+        LOG(DEBUG,"cheksum is %d", us_chksum);
+    }
+    bool ret;
+    us_chksum == 0?ret = true:ret = false;
+    delete[] buf;
+    return ret;
+}
 
+#define CHECK(fieldname, field, value) \
+do \
+{ \
+    if(field != value) \
+    {\
+        LOG(ERROR, "%s should be equal to %d, but now %d", fieldname, value, field); \
+        return false;\
+    }\
+} while(0)
+
+bool CX3parser::check_ipv4_hdr_for_msrp(IPv4_HDR *hdr)
+{
+    CHECK("DS", hdr->m_cTypeOfService, 0);
+    CHECK("flags and offset", hdr->m_sSliceinfo, 0);
+    CHECK("TTL", hdr->m_cTTL, 69);
+    return true;
+}
+bool CX3parser::check_ipv6_hdr_for_msrp(IPv6_HDR *hdr)
+{
+    return false;
+}
+bool CX3parser::check_tcp_hdr_for_msrp(TCP_HDR *hdr)
+{
+    CHECK("ack seq number", hdr->m_AcknowledgeNum, 0);
+    CHECK("reserve", hdr->m_reserve, 0);
+    CHECK("URG", hdr->m_URG, 0);
+    CHECK("ACK", hdr->m_ACK, 1);
+    CHECK("PSH", hdr->m_PSH, 0);
+    CHECK("RST", hdr->m_RST, 0);
+    CHECK("SYN", hdr->m_SYN, 0);
+    CHECK("FIN", hdr->m_FIN, 0);
+    CHECK("Window Size", hdr->m_usWindowSize, 0);
+    CHECK("Urgent Pointer", hdr->m_usUrgentPointer, 0);
+    return true;
+}

@@ -1,6 +1,6 @@
 CXXFLAGS += -Wall -Wextra -pthread -Wno-unused-parameter
 ifndef RELEASE
-    CXXFLAGS += -g
+    CXXFLAGS += -g -O0
 endif
 srcs = $(wildcard *.cpp)
 #objs = li_server.o x3parser.o log.o udpx3cachequeue.o mediapcaploader.o x3statistics.o

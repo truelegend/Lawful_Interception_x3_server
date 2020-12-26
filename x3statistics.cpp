@@ -2,7 +2,7 @@
 #include <errno.h>
 using namespace std;
 
-CSingleTargetInfo::CSingleTargetInfo(unsigned int x3body_type, unsigned int direction)
+CSingleTargetInfo::CSingleTargetInfo(X3_PAYLOAD_TYPE x3body_type, unsigned int direction)
 {
     m_cur_x3body_type = x3body_type;
     SetDirection(direction);
@@ -13,7 +13,7 @@ CSingleTargetInfo::~CSingleTargetInfo()
 
 }
 
-void CSingleTargetInfo::SetX3PkgParaForSingle(unsigned int x3body_type, unsigned int direction)
+void CSingleTargetInfo::SetX3PkgParaForSingle(X3_PAYLOAD_TYPE x3body_type, unsigned int direction)
 {
     if(m_cur_x3body_type != x3body_type)
     {
@@ -164,6 +164,128 @@ vector<CRtcpPortPairInfo>::iterator CRtpRtcpInfo::findExistedRtcpPortPair(unsign
     return iter;
 }
 */
+
+CMsrpInfo::CMsrpInfo()
+{
+    m_iptype = NOIP;
+    memset(uag_ip,0,IP_STRING_LEN);
+    memset(target_ip,0,IP_STRING_LEN);
+    
+}
+
+bool CMsrpInfo::VerifyIPAddress(const void *src, const void *dst, char *src_ip, char *dst_ip)
+{
+    assert(m_iptype != NOIP);
+    int af = m_iptype == IPV4?AF_INET:AF_INET6;
+    if ((from_target_num+to_target_num) == 1)
+    {
+        ip_addr_map[TO_DIRECTION][SRC] = uag_ip;
+        ip_addr_map[TO_DIRECTION][DST] = target_ip;
+        ip_addr_map[FROM_DIRECTION][SRC] = target_ip;
+        ip_addr_map[FROM_DIRECTION][DST] = uag_ip;
+        if(!inet_ntop(af,src,ip_addr_map[m_cur_direction][SRC],IP_STRING_LEN))
+        {
+            LOG(ERROR,"failed to get ip addr");
+            return false;
+        }
+        if(!inet_ntop(af,dst,ip_addr_map[m_cur_direction][DST],IP_STRING_LEN))
+        {
+            LOG(ERROR,"failed to get ip addr");
+            return false;
+        }
+	strcpy(src_ip,ip_addr_map[m_cur_direction][SRC]);
+	strcpy(dst_ip,ip_addr_map[m_cur_direction][DST]);
+    }
+    else
+    {
+        char tmp_target_ip[IP_STRING_LEN];
+        char tmp_uag_ip[IP_STRING_LEN];
+        char *tmp_ip_addr_map[2][2];
+        tmp_ip_addr_map[TO_DIRECTION][SRC] = tmp_uag_ip;
+        tmp_ip_addr_map[TO_DIRECTION][DST] = tmp_target_ip;
+        tmp_ip_addr_map[FROM_DIRECTION][SRC] = tmp_target_ip;
+        tmp_ip_addr_map[FROM_DIRECTION][DST] = tmp_uag_ip;
+
+        if(!inet_ntop(af,src,tmp_ip_addr_map[m_cur_direction][SRC],IP_STRING_LEN))
+        {
+            LOG(ERROR,"failed to get ip addr");
+            return false;
+        }
+        if(!inet_ntop(af,dst,tmp_ip_addr_map[m_cur_direction][DST],IP_STRING_LEN))
+        {
+            LOG(ERROR,"failed to get ip addr");
+            return false;
+        }
+	strcpy(src_ip,tmp_ip_addr_map[m_cur_direction][SRC]);
+	strcpy(dst_ip,tmp_ip_addr_map[m_cur_direction][DST]);
+        if(strcmp(target_ip,tmp_target_ip) != 0) {
+            LOG(ERROR,"target IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);
+            return false;
+        }
+        if(strcmp(uag_ip,tmp_uag_ip) != 0) {
+            LOG(ERROR,"uag IP changed?! The previous ip %s, the current ip %s",target_ip,tmp_target_ip);
+            return false;
+        }
+    }
+    return true;
+}
+
+void CMsrpInfo::SetMSRPPort(unsigned short src_port, unsigned short dst_port)
+{
+    m_target_port = (m_cur_direction==FROM_DIRECTION)?src_port:dst_port;
+    m_uag_port = (m_cur_direction==FROM_DIRECTION)?dst_port:src_port;
+    
+}
+
+bool CMsrpInfo::VerifyTCPSequence(unsigned int seq)
+{
+    if(m_cur_direction == FROM_DIRECTION)
+    {
+        if(from_target_num == 1)
+        {
+            m_from_tcp_seq = seq;
+            return true;
+        }
+        else
+        {
+            if(seq <= m_from_tcp_seq)
+            {
+                LOG(ERROR, "the seq: %lu should be bigger than previous one: %lu", seq, m_from_tcp_seq);
+                return false;
+            }
+            else
+            {
+                m_from_tcp_seq = seq;
+                return true;
+            }
+            
+        }
+        
+    }
+    else
+    {
+        if(to_target_num == 1)
+        {
+            m_to_tcp_seq = seq;
+            return true;
+        }
+        else
+        {
+            if(seq <= m_to_tcp_seq)
+            {
+                LOG(ERROR, "the seq: %lu should be bigger than previous one: %lu", seq, m_to_tcp_seq);
+                return false;
+            }
+            else
+            {
+                m_to_tcp_seq = seq;
+                return true;
+            }
+            
+        }
+    }
+}
+
 CX3Statistics::CX3Statistics()
 {
     x3_num = 0;
@@ -173,7 +295,7 @@ CX3Statistics::~CX3Statistics()
 {
 
 }
-void CX3Statistics::SetX3PkgPara(const string &corId, unsigned int x3body_type, unsigned int direction)
+void CX3Statistics::SetX3PkgPara(const string &corId, X3_PAYLOAD_TYPE x3body_type, unsigned int direction)
 {
     m_cur_corId = corId;
     if(m_x3info.find(m_cur_corId) == m_x3info.end())
@@ -191,15 +313,34 @@ void CX3Statistics::SetX3PkgPara(const string &corId, unsigned int x3body_type, 
 bool CX3Statistics::VerifyIPType(unsigned int ip_type)
 {
     //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPType(ip_type);
-    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPType(ip_type);
+    if(m_x3info[m_cur_corId].m_cur_x3body_type == X3_RTP)
+    {
+        return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPType(ip_type);
+    }
+    else
+    {
+        return m_x3info[m_cur_corId].m_MsrpInfo.VerifyIPType(ip_type);
+    }
+    
 }
 
 bool CX3Statistics::VerifyIPAddress(const void *src, const void *dst, char *src_ip, char *dst_ip)
 {
     //return m_x3info.at(m_cur_corId).m_RtpRtcpInfo.VerifyIPAddress(src, dst, af);
-    return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPAddress(src, dst, src_ip,dst_ip);
+    if(m_x3info[m_cur_corId].m_cur_x3body_type == X3_RTP)
+    {
+        return m_x3info[m_cur_corId].m_RtpRtcpInfo.VerifyIPAddress(src, dst, src_ip,dst_ip);
+    }
+    else
+    {
+        return m_x3info[m_cur_corId].m_MsrpInfo.VerifyIPAddress(src, dst, src_ip,dst_ip);
+    }
+    
 }
-
+bool CX3Statistics::VerifyTCPSequence(unsigned int seq)
+{
+    return m_x3info[m_cur_corId].m_MsrpInfo.VerifyTCPSequence(seq);
+}
 void CX3Statistics::SetRtpPort(unsigned short src_port, unsigned short dst_port)
 {
     //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtpPort(src_port,dst_port);
@@ -209,6 +350,11 @@ void CX3Statistics::SetRtcpPort(unsigned short src_port, unsigned short dst_port
 {
     //m_x3info.at(m_cur_corId).m_RtpRtcpInfo.SetRtcpPort(src_port,dst_port);
     m_x3info[m_cur_corId].m_RtpRtcpInfo.SetRtcpPort(src_port,dst_port);
+}
+
+void CX3Statistics::SetMsrpPort(unsigned short src_port, unsigned short dst_port)
+{
+    m_x3info[m_cur_corId].m_MsrpInfo.SetMSRPPort(src_port,dst_port);
 }
 
 bool CX3Statistics::SetRtpPT(unsigned int pt)
@@ -248,6 +394,7 @@ void CX3Statistics::OutputStatics()
     const char *x3_rtp_no = "    X3_RTP NO.";
     const char *target_uag_ip = "    target / uag IP";
     const char *rtp_port = "    rtp target / uag port";
+    const char *msrp_port = "    msrp target / uag port";
     const char *pt = "        PT";
     const char *rtp_no = "        RTP NO.";
     const char *ssrc = "        SSRC";
@@ -277,7 +424,7 @@ void CX3Statistics::OutputStatics()
     for(map<string,CSingleTargetInfo>::iterator iter = m_x3info.begin(); iter != m_x3info.end(); ++iter)
     {
 	int from_no, to_no;
-        LOG_RAW("%*s: %s",L_SPACE,correlation_id, iter->first.c_str());
+        LOG_RAW("\n%*s: %s",L_SPACE,correlation_id, iter->first.c_str());
         if(iter->second.m_cur_x3body_type == X3_RTP)
         {
 	    LOG_RAW("%*s: X3_RTP",L_SPACE,type);
@@ -325,6 +472,8 @@ void CX3Statistics::OutputStatics()
 	    from_no = iter->second.m_MsrpInfo.from_target_num;
 	    to_no = iter->second.m_MsrpInfo.to_target_num;
 	    LOG_RAW("%*s: %*d%*d%*d",L_SPACE,x3_msrp_no,R_SPACE,from_no,R_SPACE,to_no,R_SPACE,from_no+to_no);
+        LOG_RAW("%*s: %s / %s",L_SPACE,target_uag_ip,iter->second.m_MsrpInfo.target_ip,iter->second.m_MsrpInfo.uag_ip);
+        LOG_RAW("%*s: %d / %d",L_SPACE,msrp_port,iter->second.m_MsrpInfo.m_target_port,iter->second.m_MsrpInfo.m_uag_port);
         }
     }
     if(err_no == 0)

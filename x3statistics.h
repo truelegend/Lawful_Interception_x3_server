@@ -28,9 +28,12 @@
 #define IP_STRING_LEN 256
 
 
-#define        X3_RTP      0
-#define        X3_MSRP     1
-#define        X3_NOTYPE   2
+enum X3_PAYLOAD_TYPE
+{
+    X3_RTP = 0,
+    X3_MSRP = 1,
+    X3_NOTYPE = 2
+};
 
 #define   TO_DIRECTION     0
 #define   FROM_DIRECTION   1
@@ -205,7 +208,44 @@ public:
 class CMsrpInfo: public CBaseInfo
 {
 private:
-    ;
+    char *ip_addr_map[2][2];
+    template<class Container> 
+    typename Container::iterator FindPortPair(unsigned short target_port,unsigned short uag_port, Container &con)
+    {
+        typename Container::iterator iter;
+        for(iter = con.begin(); iter != con.end(); ++iter)
+        {
+            if (iter->m_target_port == target_port
+                && iter->m_uag_port == uag_port)
+            {
+                return iter;
+            }
+        }
+        return iter;
+
+    }
+    unsigned int m_from_tcp_seq;
+    unsigned int m_to_tcp_seq;
+
+public:
+
+    char target_ip[IP_STRING_LEN];
+    char uag_ip[IP_STRING_LEN];
+    unsigned short m_target_port;
+    unsigned short m_uag_port;
+    unsigned int  m_iptype;
+    CMsrpInfo();
+    ~CMsrpInfo()
+    {
+
+    }
+    bool VerifyIPType(unsigned int ip_type)
+    {
+        return SetAndVerifyValue(from_target_num+to_target_num,m_iptype,ip_type);
+    }
+    bool VerifyIPAddress(const void *src, const void *dst,char *src_ip, char *dst_ip);
+    void SetMSRPPort(unsigned short src_port, unsigned short dst_port);
+    bool VerifyTCPSequence(unsigned int seq);
 };
 
 class CRtpRtcpInfo: public CBaseInfo
@@ -258,12 +298,13 @@ public:
 class CSingleTargetInfo
 {
 public:
-    unsigned int m_cur_x3body_type;
+    X3_PAYLOAD_TYPE m_cur_x3body_type;
 
     CMsrpInfo    m_MsrpInfo;
     CRtpRtcpInfo m_RtpRtcpInfo;
+    // CBaseInfo   *m_base_info;
 public:
-    CSingleTargetInfo(unsigned int x3body_type, unsigned int direction);
+    CSingleTargetInfo(X3_PAYLOAD_TYPE x3body_type, unsigned int direction);
     // desgin the default constructor just for map operator[] compiling pass requirement, should use .at() function to replace [] in C++11
     CSingleTargetInfo()
     {
@@ -271,7 +312,7 @@ public:
 	exit(1);
     }
     ~CSingleTargetInfo();
-    void SetX3PkgParaForSingle(unsigned int x3body_type, unsigned int direction);
+    void SetX3PkgParaForSingle(X3_PAYLOAD_TYPE x3body_type, unsigned int direction);
     void SetDirection(unsigned int direction);
 
 };
@@ -290,9 +331,11 @@ public:
     ~CX3Statistics();
     bool VerifyIPAddress(const void *src, const void *dst,char *src_ip, char *dst_ip);
     bool VerifyIPType(unsigned int ip_type);
-    void SetX3PkgPara(const std::string & corId, unsigned int x3body_type, unsigned int direction);
+    bool VerifyTCPSequence(unsigned int seq);
+    void SetX3PkgPara(const std::string & corId, X3_PAYLOAD_TYPE x3body_type, unsigned int direction);
     void SetRtpPort(unsigned short src_port, unsigned short dst_port);
     void SetRtcpPort(unsigned short src_port, unsigned short dst_port);
+    void SetMsrpPort(unsigned short src_port, unsigned short dst_port);
     bool SetRtpPT(unsigned int pt);
     void SetRtpDTMF();
     bool SetRtpSSRC(unsigned int ssrc);

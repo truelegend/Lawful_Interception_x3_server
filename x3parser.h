@@ -21,7 +21,7 @@
 #include "log.h"
 #include "mediapcaploader.h"
 #include "x3statistics.h"
-
+// We can actully use #include <linux/ip.h>
 struct IPv4_HDR
 {
     uint8_t    m_cVersionAndHeaderLen;
@@ -37,6 +37,14 @@ struct IPv4_HDR
     //unsigned int m_uiSourIp;
     //unsigned int m_uiDestIp;
 };
+struct PSEU_IPv4_HDR
+{
+    struct in_addr   m_in4addrSourIp;
+    struct in_addr   m_in4addrDestIp;
+    uint8_t m_zero;
+    uint8_t m_ptcl;
+    uint16_t m_len;
+};
 struct IPv6_HDR
 {
     uint32_t m_version_class_flowlabel;
@@ -48,6 +56,14 @@ struct IPv6_HDR
     //unsigned char  m_ucSrcIp[16];
     //unsigned char  m_ucDstIp[16];
 };
+struct PSEU_IPv6_HDR
+{
+    struct in6_addr   m_in6addrSourIp;
+    struct in6_addr   m_in6addrDestIp;
+    uint32_t m_len;
+    uint32_t m_zero: 24;
+    uint32_t m_ptcl: 8;
+};
 struct UDP_HDR
 {
     uint16_t m_usSourPort;
@@ -56,6 +72,30 @@ struct UDP_HDR
     uint16_t m_usCheckSum;
 
 };
+// we can actually use #include <linux/tcp.h> directly
+struct TCP_HDR
+{
+    uint16_t m_usSourPort;
+    uint16_t m_usDestPort;
+    uint32_t m_SequNum;
+    uint32_t m_AcknowledgeNum;
+    // Alert! little endian in one byte!
+    uint8_t  m_reserve:4;
+    uint8_t  m_len:4;
+    uint8_t  m_FIN:1;
+    uint8_t  m_SYN:1;
+    uint8_t  m_RST:1;
+    uint8_t  m_PSH:1;
+    uint8_t  m_ACK:1;
+    uint8_t  m_URG:1;
+    uint8_t  m_ECE:1;
+    uint8_t  m_CWR:1;
+    uint16_t m_usWindowSize;
+    uint16_t m_usCheckSum;
+    uint16_t m_usUrgentPointer;
+
+};
+
 struct RTP_HDR
 {
 
@@ -152,14 +192,16 @@ public:
     CX3Statistics m_x3statistics;
 
 private:
-
+    typedef bool (*check_ipv4_hdr_func)(IPv4_HDR *hdr);
+    typedef bool (*check_ipv6_hdr_func)(IPv6_HDR *hdr); 
+    typedef bool (*check_tcp_hdr_func)(TCP_HDR *hdr);
     int sock;
     struct sockaddr_in peeraddr;
     unsigned char *m_x3;
     int m_x3_len;
     char tmp[100];
     int m_payloadlen;
-    int m_payloadtype;
+    X3_PAYLOAD_TYPE m_payloadtype;
     int m_calldirection;
     int m_real_rtptype;
     unsigned int m_iptype;
@@ -175,9 +217,13 @@ private:
     bool verifyX3hdrformat();
     char *getX3hdrrear();
     bool parse_x3body(unsigned char *body, int len);
-    bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len);
+    bool parse_x3body_MSRP(unsigned char *body, int len);
+    bool parse_x3body_RTXP(unsigned char *body, int len);
+    bool parse_ip_hdr(unsigned char *body, int &ip_hdr_len, int &total_len, uint8_t prot, bool do_checksum, check_ipv4_hdr_func ipv4_checker=NULL, check_ipv6_hdr_func ipv6_checker=NULL);
     bool verifyIPhdrChecksum(u_short *hdr, u_int size);
+    bool verifyTCPhdrChecksum(unsigned char *hdr, int size);
     unsigned short parse_udp_hdr(unsigned char *body);
+    bool parse_tcp_hdr(unsigned char *body, int total_len, int &hdr_len, check_tcp_hdr_func tcp_checker=NULL);
     bool parse_rtp(unsigned char *data,int rtp_len);
     bool parse_rtcp(unsigned char *data,int rtcp_len);
     bool parse_msrp(unsigned char *data);
@@ -190,8 +236,14 @@ private:
     void initializeArguments();
     bool setPortPairInfo(unsigned short src_port, unsigned short dst_port);
 
-
     void SetMinMaxSeq(int &min,int &max,unsigned short seq);
+    static bool check_ipv4_hdr_for_msrp(IPv4_HDR *hdr);
+    static bool check_ipv6_hdr_for_msrp(IPv6_HDR *hdr); 
+    static bool check_tcp_hdr_for_msrp(TCP_HDR *hdr);
+    
     bool m_benableCompare;
+    PSEU_IPv4_HDR m_pseu_ipv4_hdr;
+    PSEU_IPv6_HDR m_pseu_ipv6_hdr;
+    
 };
 #endif
