@@ -493,7 +493,7 @@ int main(int argc, char **argv)
             timeout = atoi(optarg);
             break;
         case 'c':
-            printf("enable IPv4 header checksum\n");
+            printf("enable IPv4 header checksum (for RTP X3 only; for MSRP X3, IPv4 hdr checksum is enabled by default)\n");
             gIP_CHECKSUM = true;
             break;
         case 'w':
