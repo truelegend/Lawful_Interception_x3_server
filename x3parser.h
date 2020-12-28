@@ -226,7 +226,7 @@ private:
     bool parse_tcp_hdr(unsigned char *body, int total_len, int &hdr_len, check_tcp_hdr_func tcp_checker=NULL);
     bool parse_rtp(unsigned char *data,int rtp_len);
     bool parse_rtcp(unsigned char *data,int rtcp_len);
-    bool parse_msrp(unsigned char *data);
+    bool parse_msrp(unsigned char *data, int len);
 
     bool IsValidDTMF(u_char *dtmf, int dtmf_len,bool & b_end);
     void formatX3();

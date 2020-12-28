@@ -133,7 +133,7 @@ bool CX3parser::parse_x3body_MSRP(unsigned char *body, int len)
         return false;
     }
     start += tcp_hdr_len;
-    return parse_msrp((unsigned char*)start);
+    return parse_msrp((unsigned char*)start, total_len-ip_hdr_len-tcp_hdr_len);
 }
 bool CX3parser::parse_x3body_RTXP(unsigned char *body, int len)
 {
@@ -159,10 +159,6 @@ bool CX3parser::parse_x3body_RTXP(unsigned char *body, int len)
     }
     //LOG(DEBUG,"udp hdr+body len is %d",udp_hdrbody_len);
     start += sizeof(UDP_HDR);
-    /*if (m_payloadtype == MSRP)
-    {
-        parse_msrp((unsigned char*)start);
-    }*/
     if (m_real_rtptype == REAL_RTP)
     {
         return parse_rtp((unsigned char*)start, udp_hdrbody_len - sizeof(UDP_HDR));
@@ -423,11 +419,15 @@ bool CX3parser::parse_rtp(unsigned char *data, int rtp_len)
     return true;
 }
 
-bool CX3parser::parse_msrp(unsigned char *data)
+bool CX3parser::parse_msrp(unsigned char *data, int msrp_len)
 {
     if(m_dumpX3)
     {
-        LOG(DEBUG,"dump the msrp data:\n%s", data);
+        unsigned char* pBuffer = new unsigned char[msrp_len+1];
+        memcpy(pBuffer, data, msrp_len);
+        pBuffer[msrp_len] = '\0';
+        LOG(DEBUG,"dump the msrp data:\n%s", pBuffer);
+        delete[] pBuffer;
     }
     return true;
 }
